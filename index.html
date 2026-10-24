@@ -162,6 +162,21 @@ button, select, input { font: inherit; color: inherit; }
 
 .stats { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .stats-wrap { overflow-x: auto; }
+.adv { border: 1px dashed var(--rule); border-radius: 6px; min-width: 0; }
+.adv > summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: auto auto 1fr; gap: 2px 10px; align-items: baseline; padding: 10px 14px; border-radius: 6px; }
+.adv > summary::-webkit-details-marker { display: none; }
+.adv > summary:hover { background: var(--panel); }
+.adv-t { font-family: var(--f-display); font-weight: 700; font-size: 1rem; }
+.adv-t::before { content: "▸"; display: inline-block; width: 1.1em; color: var(--accent); transition: transform .15s; }
+.adv[open] > summary .adv-t::before { transform: rotate(90deg); }
+.adv-a { justify-self: end; grid-column: 3; grid-row: 1; font: 12px var(--f-mono); color: var(--accent); }
+.adv-a::before { content: "Show"; }
+.adv[open] > summary .adv-a::before { content: "Hide"; }
+.adv-l { grid-column: 1 / -1; color: var(--muted); font-size: 13.5px; padding-left: 1.1em; }
+.adv-badge, .adv-badge-inline { font: 500 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--trZ-ink); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.adv-body { display: grid; gap: 14px; padding: 4px 14px 16px; min-width: 0; }
+.adv.sect { border-color: var(--rule); background: transparent; }
+@media (prefers-reduced-motion: reduce) { .adv-t::before { transition: none; } }
 .dets { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 10px 22px; }
 .dets div { min-width: 0; }
 .dets dt { font-weight: 600; font-size: 14px; }
@@ -205,7 +220,7 @@ footer p { max-width: 90ch; }
     <div class="eyebrow">Quadrature direct-conversion receiver · simulated at 32 kHz · 4.096 s loop</div>
     <h1>Audible SDR</h1>
     <p class="byline">By Ali Raheem, <b>G3ALI</b> · <a href="https://g3ali.com/">g3ali.com</a> · <a href="https://github.com/ali-raheem/audible-sdr">Source on GitHub</a></p>
-    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with six transmissions between 3 and 15 kHz buried in noise, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right.</p>
+    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with six transmissions between 3 and 15 kHz, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right.</p>
 
     <div class="flow-wrap">
       <svg class="flow" viewBox="0 0 1010 200" role="img" aria-label="Signal flow: antenna, preselector, two mixers fed by a quadrature LO, IF low-pass filters, ADCs, then I plus jQ, IQ correction, DFT, mask and shift, inverse DFT, real part, speaker">
@@ -265,6 +280,13 @@ footer p { max-width: 90ch; }
       <h3 style="margin-bottom:10px">On the air</h3>
       <div class="stations" id="stations"></div>
     </div>
+    <p class="note">The page opens as an ideal receiver: no noise, perfect parts, no compromises. Work through it top to bottom first. The dashed panels hold the real-world complications and are closed until you want them. A panel marked <b class="adv-badge-inline">active</b> has a setting that is not ideal.</p>
+    <details class="adv" id="adv-exp">
+        <summary><span class="adv-t">Experiments</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Ready-made demonstrations of real-world faults and limits. Each one opens the panel it needs.</span></summary>
+        <div class="adv-body">
+          <div class="stations" id="experiments"></div>
+        </div>
+      </details>
     <p class="note">Each Play button scales its own buffer to a comfortable level, so quiet stages are still audible. To compare levels, use the spectra: they share one dBFS scale, where a full-scale sine reads 0 dB.</p>
   </section>
 
@@ -274,6 +296,13 @@ footer p { max-width: 90ch; }
       <div class="shead"><h2>Antenna</h2><span class="dom analog">analog</span></div>
       <p>Everything arrives at once. Listen and you can pick out the AM carrier as a steady 3 kHz whistle, two Morse signals at 11 kHz (a slow beacon and G3ALI calling CQ), a narrowband FM tune at 12.75 kHz and the 15 kHz data signal, which many adults barely hear. The two programmes on the 7.5 kHz ISB station are there too, but at this point they sound like scrambled noise. Drag on the spectrum to tune the receiver.</p>
       <div class="controls" data-controls="rf"></div>
+      <details class="adv" id="adv-noise">
+        <summary><span class="adv-t">Noise</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Add receiver noise and see why a narrower filter lets you hear weaker signals.</span></summary>
+        <div class="adv-body">
+          <p class="note">Every real receiver adds noise, and noise is spread across the whole band while a signal sits in one place. Each filter that narrows the band removes noise but keeps the signal, so the signal-to-noise ratio improves by 10·log₁₀ of the bandwidth ratio. Going from a 2 kHz SSB-sized mask to 150 Hz for CW gains about 11 dB, which is why CW gets through when voice does not. FM behaves differently: it is clean down to a threshold and then breaks up suddenly. Try the CQ and NBFM presets as you raise the noise.</p>
+          <div class="controls" data-controls="noise"></div>
+        </div>
+      </details>
       <div class="plots"><div data-plot="rfScope"></div><div data-plot="rfSpec"></div></div>
     </div>
   </section>
@@ -282,7 +311,7 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">2</div></div>
     <div class="body">
       <div class="shead"><h2>RF preselector</h2><span class="dom analog">analog</span></div>
-      <p>A band-pass filter before the mixer. An ideal multiplier would not need it, but real mixers also respond at harmonics of the LO (3×, 5×…) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it.</p>
+      <p>A band-pass filter before the mixer. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it.</p>
       <div class="controls" data-controls="pre"></div>
       <div class="plots"><div data-plot="preScope"></div><div data-plot="preSpec"></div></div>
     </div>
@@ -292,8 +321,16 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">3</div></div>
     <div class="body">
       <div class="shead"><h2>Local oscillator</h2><span class="dom analog">analog</span></div>
-      <p>One oscillator, two outputs 90° apart: <code>LO<sub>I</sub> = cos(2πf<sub>LO</sub>t)</code> and <code>LO<sub>Q</sub> = −sin(2πf<sub>LO</sub>t)</code>. Played separately they sound identical. The difference is only phase, which the X–Y plot shows as a circle; with no quadrature it would collapse to a line. The frequency is rounded to a multiple of 0.244 Hz so the loop stays seamless. <em>Square</em> gives a switching-mixer LO with odd harmonics, band-limited below Nyquist.</p>
+      <p>One oscillator, two outputs 90° apart: <code>LO<sub>I</sub> = cos(2πf<sub>LO</sub>t)</code> and <code>LO<sub>Q</sub> = −sin(2πf<sub>LO</sub>t)</code>. Played separately they sound identical. The difference is only phase, which the X–Y plot shows as a circle; with no quadrature it would collapse to a line. The frequency is rounded to a multiple of 0.244 Hz so the loop stays seamless.</p>
       <div class="controls" data-controls="lo"></div>
+      <details class="adv" id="adv-lo">
+        <summary><span class="adv-t">Switching mixers and LO harmonics</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Why a square-wave LO also receives at 3× and 5× its frequency, and how the preselector stops it.</span></summary>
+        <div class="adv-body">
+          <p class="note">Many SDRs, such as the Tayloe detector in the SoftRock, use switches instead of true multipliers. Switching is the same as multiplying by a square wave, and a square wave contains odd harmonics at 3f<sub>LO</sub>, 5f<sub>LO</sub> and so on, at 1/3, 1/5… of the amplitude. Each harmonic mixes its own part of the spectrum down to baseband, on top of the wanted signal. The preselector in section 2 is what keeps those frequencies out. The square wave here is band-limited below Nyquist.</p>
+          <div class="controls" data-controls="lowave"></div>
+          <div><button class="btn" type="button" data-preset="trap">Load the third-harmonic trap</button></div>
+        </div>
+      </details>
       <div class="plots three"><div data-plot="loScope"></div><div data-plot="loSpec"></div><div data-plot="loXY"></div></div>
     </div>
   </section>
@@ -304,7 +341,7 @@ footer p { max-width: 90ch; }
       <div class="shead"><h2>Mixers</h2><span class="dom analog">analog</span></div>
       <p>Each path multiplies the preselected signal by its LO, which makes sum and difference frequencies. A station at <code>f<sub>LO</sub> + Δ</code> lands at Δ and at <code>2f<sub>LO</sub> + Δ</code>. The I output on its own cannot tell <code>f<sub>LO</sub> + Δ</code> from <code>f<sub>LO</sub> − Δ</code>: both fold onto the same audio frequency. With the ISB preset, play I alone and you hear the melody and the bass line on top of each other. Q has the same spectrum magnitude but a different phase, and that phase is what separates them later.</p>
       <div class="plots"><div data-plot="mixScope"></div><div data-plot="mixSpec"></div></div>
-      <p class="note">Real mixers are not perfect: the Q branch may have a little more gain than I, the LO split may not be exactly 90°, and LO leakage adds DC. Section 8 lets you add those faults here and then remove them digitally.</p>
+      <p class="note">Real mixers are not perfect: the Q branch may have a little more gain than I, the LO split may not be exactly 90°, and LO leakage adds DC. Section 8 covers what that does and how to remove it digitally.</p>
     </div>
   </section>
 
@@ -318,14 +355,20 @@ footer p { max-width: 90ch; }
     </div>
   </section>
 
-  <section class="stage digital" id="s-adc">
+  <section class="stage digital part2" id="s-adc">
     <div class="rail"><div class="num">6</div></div>
     <div class="body">
-      <div class="shead"><h2>ADC and sample rate</h2><span class="dom analog">analog</span><span class="dom digital">→ digital</span></div>
-      <p>The IF output is still a continuous voltage. A pair of ADCs samples I and Q at a rate <code>f<sub>s</sub></code>, and from then on the receiver only knows the band <code>−f<sub>s</sub>/2 … +f<sub>s</sub>/2</code>. Anything outside it does not vanish. It folds back into the band, which is called aliasing, and once it has folded no later filter can separate it from the wanted signal. Lower the sample rate and the spectrum narrows to the green band. With the IF filter in circuit nothing harmful folds in. Switch it off and stations from all over the 16 kHz “RF” band land on top of the one you wanted.</p>
-      <p>Because I and Q are sampled together, the usable band is the full <code>±f<sub>s</sub>/2</code>, twice what a single real ADC at the same rate covers. Real SDRs usually sample fast (an RTL-SDR runs at a few MS/s) and then lower the rate digitally in stages with CIC and half-band filters. Each stage follows the same rule as here: filter first, then drop samples. Lower rates make every later step cheaper.</p>
-      <div class="controls" data-controls="adc"></div>
-      <div class="plots"><div data-plot="adcScope"></div><div data-plot="adcSpec"></div></div>
+      <div class="shead"><h2>ADC and sample rate</h2><span class="dom part">optional</span><span class="dom analog">analog</span><span class="dom digital">→ digital</span></div>
+      <p>In the ideal receiver the ADC samples at the full 32 kHz, so it changes nothing and you can skip this section.</p>
+      <details class="adv sect" id="sec-adc">
+        <summary><span class="adv-t">Sample rate and aliasing</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">What the ADC sample rate limits, why the IF filter must come before it, and how SDRs lower the rate.</span></summary>
+        <div class="adv-body">
+          <p>The IF output is still a continuous voltage. A pair of ADCs samples I and Q at a rate <code>f<sub>s</sub></code>, and from then on the receiver only knows the band <code>−f<sub>s</sub>/2 … +f<sub>s</sub>/2</code>. Anything outside it does not vanish. It folds back into the band, which is called aliasing, and once it has folded no later filter can separate it from the wanted signal. Lower the sample rate and the spectrum narrows to the green band. With the IF filter in circuit nothing harmful folds in. Switch it off and stations from all over the 16 kHz “RF” band land on top of the one you wanted.</p>
+          <p>Because I and Q are sampled together, the usable band is the full <code>±f<sub>s</sub>/2</code>, twice what a single real ADC at the same rate covers. Real SDRs usually sample fast (an RTL-SDR runs at a few MS/s) and then lower the rate digitally in stages with CIC and half-band filters. Each stage follows the same rule as here: filter first, then drop samples. Lower rates make every later step cheaper.</p>
+          <div class="controls" data-controls="adc"></div>
+          <div class="plots"><div data-plot="adcScope"></div><div data-plot="adcSpec"></div></div>
+        </div>
+      </details>
     </div>
   </section>
 
@@ -341,38 +384,44 @@ footer p { max-width: 90ch; }
   <section class="stage digital part2" id="s-iqfix">
     <div class="rail"><div class="num">8</div></div>
     <div class="body">
-      <div class="shead"><h2>IQ mismatch and correction</h2><span class="dom part">part 2</span><span class="dom analog">analog fault</span><span class="dom digital">digital fix</span></div>
-      <p>Everything so far assumed a perfect quadrature mixer. Real ones have two I and Q paths built from separate parts, so they never match exactly. With a gain ratio <code>g</code> and a phase error <code>φ</code> the Q path delivers <code>g·sin(θ − φ)</code> instead of <code>sin θ</code>, and the LO leaking into the mixer adds a DC offset to each output. Look back at the LO’s X–Y plot in section 3 while you move the sliders: the circle becomes a tilted ellipse.</p>
-      <p>The damage shows up as an <em>image</em>. A signal at +Δ also appears, weaker, at −Δ, and the other way round. How much weaker is the image rejection ratio. A 1 dB gain error alone limits it to about 25 dB, and 1° of phase error alone to about 41 dB. That is enough to hear the lower sideband of the ISB station leak into the upper one, which is exactly the job the I + jQ receiver was meant to do.</p>
+      <div class="shead"><h2>IQ mismatch and correction</h2><span class="dom part">optional</span><span class="dom analog">analog fault</span><span class="dom digital">digital fix</span></div>
+      <p>The ideal receiver has perfectly matched I and Q paths, so there is nothing to correct and you can skip this section on a first pass.</p>
+      <details class="adv sect" id="sec-iq">
+        <summary><span class="adv-t">IQ mismatch and its correction</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">How imperfect mixers leak an image across 0 Hz, and how to measure and remove it using only the received signal.</span></summary>
+        <div class="adv-body">
+          <p>Everything so far assumed a perfect quadrature mixer. Real ones have two I and Q paths built from separate parts, so they never match exactly. With a gain ratio <code>g</code> and a phase error <code>φ</code> the Q path delivers <code>g·sin(θ − φ)</code> instead of <code>sin θ</code>, and the LO leaking into the mixer adds a DC offset to each output. Look back at the LO’s X–Y plot in section 3 while you move the sliders: the circle becomes a tilted ellipse.</p>
+          <p>The damage shows up as an <em>image</em>. A signal at +Δ also appears, weaker, at −Δ, and the other way round. How much weaker is the image rejection ratio. A 1 dB gain error alone limits it to about 25 dB, and 1° of phase error alone to about 41 dB. That is enough to hear the lower sideband of the ISB station leak into the upper one, which is exactly the job the I + jQ receiver was meant to do.</p>
 
-      <div class="sub-block">
-        <h3>1 · Inject the fault</h3>
-        <p class="note">These errors are applied in the analog part of the receiver: gain and phase to the Q output of the LO in section 3, and DC offsets at the mixer outputs in section 4. The image is easiest to see with the CQ preset, where two clean tones appear on the positive side, and easiest to hear with the ISB upper preset.</p>
-        <div class="controls" data-controls="mix"></div>
-        <div><button class="btn" type="button" id="imbDemo">Load the mismatch demo</button></div>
-      </div>
-      <div class="plots"><div data-plot="xyRaw"></div><div data-plot="cxBefore"></div></div>
+          <div class="sub-block">
+            <h3>1 · Inject the fault</h3>
+            <p class="note">These errors are applied in the analog part of the receiver: gain and phase to the Q output of the LO in section 3, and DC offsets at the mixer outputs in section 4. The image is easiest to see with the CQ preset, where two clean tones appear on the positive side, and easiest to hear with the ISB upper preset.</p>
+            <div class="controls" data-controls="mix"></div>
+            <div><button class="btn" type="button" id="imbDemo">Load the mismatch demo</button></div>
+          </div>
+          <div class="plots"><div data-plot="xyRaw"></div><div data-plot="cxBefore"></div></div>
 
-      <div class="sub-block">
-        <h3>2 · Estimate it from the signal and correct it</h3>
-        <p class="note">The receiver cannot see the fault directly, but it can measure statistics of the received signal. The means give the DC offsets. The ratio of standard deviations gives the gain error. The correlation between I and Q gives the phase error, because <code>ρ = sin ψ</code> with <code>ψ = −φ</code>. The correction is then <code>Q′ = (Q/g − I·sin ψ) / cos ψ</code>. This assumes the true I and Q are uncorrelated and of equal power. That holds for most signals but not for a lone carrier at exactly 0 Hz, so try the AM preset with a fault and watch the estimate go wrong.</p>
-        <div class="controls" data-controls="corr"></div>
-        <div class="stats-wrap">
-          <table class="stats">
-            <thead><tr><th>Quantity</th><th>Measured from signal</th><th>Injected fault</th><th>How it is estimated</th></tr></thead>
-            <tbody>
-              <tr><th>DC offset I</th><td id="t-mI">–</td><td id="t-dcI">–</td><td class="f">mean(I)</td></tr>
-              <tr><th>DC offset Q</th><td id="t-mQ">–</td><td id="t-dcQ">–</td><td class="f">mean(Q)</td></tr>
-              <tr><th>σ<sub>I</sub>, σ<sub>Q</sub></th><td id="t-sd">–</td><td>–</td><td class="f">standard deviation after removing the mean</td></tr>
-              <tr><th>Gain error</th><td id="t-g">–</td><td id="t-gs">–</td><td class="f">20·log₁₀(σ<sub>Q</sub>/σ<sub>I</sub>)</td></tr>
-              <tr><th>Correlation ρ</th><td id="t-rho">–</td><td>–</td><td class="f">mean(I·Q) / (σ<sub>I</sub>σ<sub>Q</sub>)</td></tr>
-              <tr><th>Phase error</th><td id="t-ph">–</td><td id="t-phs">–</td><td class="f">−asin(ρ)</td></tr>
-              <tr><th>Image rejection</th><td id="t-irr">–</td><td id="t-irrs">–</td><td class="f">(1 + 2g cos φ + g²) / (1 − 2g cos φ + g²)</td></tr>
-            </tbody>
-          </table>
+          <div class="sub-block">
+            <h3>2 · Estimate it from the signal and correct it</h3>
+            <p class="note">The receiver cannot see the fault directly, but it can measure statistics of the received signal. The means give the DC offsets. The ratio of standard deviations gives the gain error. The correlation between I and Q gives the phase error, because <code>ρ = sin ψ</code> with <code>ψ = −φ</code>. The correction is then <code>Q′ = (Q/g − I·sin ψ) / cos ψ</code>. This assumes the true I and Q are uncorrelated and of equal power. That holds for most signals but not for a lone carrier at exactly 0 Hz, so try the AM preset with a fault and watch the estimate go wrong.</p>
+            <div class="controls" data-controls="corr"></div>
+            <div class="stats-wrap">
+              <table class="stats">
+                <thead><tr><th>Quantity</th><th>Measured from signal</th><th>Injected fault</th><th>How it is estimated</th></tr></thead>
+                <tbody>
+                  <tr><th>DC offset I</th><td id="t-mI">–</td><td id="t-dcI">–</td><td class="f">mean(I)</td></tr>
+                  <tr><th>DC offset Q</th><td id="t-mQ">–</td><td id="t-dcQ">–</td><td class="f">mean(Q)</td></tr>
+                  <tr><th>σ<sub>I</sub>, σ<sub>Q</sub></th><td id="t-sd">–</td><td>–</td><td class="f">standard deviation after removing the mean</td></tr>
+                  <tr><th>Gain error</th><td id="t-g">–</td><td id="t-gs">–</td><td class="f">20·log₁₀(σ<sub>Q</sub>/σ<sub>I</sub>)</td></tr>
+                  <tr><th>Correlation ρ</th><td id="t-rho">–</td><td>–</td><td class="f">mean(I·Q) / (σ<sub>I</sub>σ<sub>Q</sub>)</td></tr>
+                  <tr><th>Phase error</th><td id="t-ph">–</td><td id="t-phs">–</td><td class="f">−asin(ρ)</td></tr>
+                  <tr><th>Image rejection</th><td id="t-irr">–</td><td id="t-irrs">–</td><td class="f">(1 + 2g cos φ + g²) / (1 − 2g cos φ + g²)</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="plots"><div data-plot="xyCorr"></div><div data-plot="cxAfter"></div></div>
         </div>
-      </div>
-      <div class="plots"><div data-plot="xyCorr"></div><div data-plot="cxAfter"></div></div>
+      </details>
     </div>
   </section>
 
@@ -381,8 +430,14 @@ footer p { max-width: 90ch; }
     <div class="body">
       <div class="shead"><h2>DFT, mask and shift</h2><span class="dom digital">digital</span></div>
       <p>Take the DFT of the whole loop of z (131 072 points), multiply it by a mask that keeps only the part you want, then roll the bins to move that part along the frequency axis. Because positive and negative frequencies are now separate, the mask can pick a single sideband. The image that stage 4 could not separate is now simply somewhere else on the axis. Drag on the top spectrum to place the mask. The shift moves every component by the same number of hertz, which changes the pitch you hear, and harmonics stop being harmonic, which is why mistuned SSB sounds like Donald Duck.</p>
-      <p>The receiver switch shows what all of this buys you. A <em>single-mixer</em> receiver only has I, a real signal whose spectrum is always mirror-symmetric. Its mask can only be mirrored too, and it cannot shift: moving a real signal’s positive half up moves its negative half down. A real direct-conversion receiver tunes with its LO instead. Try it with the ISB presets: the melody and the bass line come out together whatever you do with the mask.</p>
       <div class="controls" data-controls="dft"></div>
+      <details class="adv" id="adv-rx">
+        <summary><span class="adv-t">Why Q matters: the single-mixer receiver</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Hear what a receiver with only an I channel can and cannot separate.</span></summary>
+        <div class="adv-body">
+          <p class="note">A <em>single-mixer</em> receiver only has I, a real signal whose spectrum is always mirror-symmetric. Its mask can only be mirrored too, and it cannot shift: moving a real signal’s positive half up moves its negative half down. A real direct-conversion receiver tunes with its LO instead. Try it with the ISB presets: the melody and the bass line come out together whatever you do with the mask.</p>
+          <div class="controls" data-controls="rx"></div>
+        </div>
+      </details>
       <div class="plots three"><div data-plot="dftIn"></div><div data-plot="dftOut"></div><div data-plot="dftScope"></div></div>
     </div>
   </section>
@@ -395,9 +450,17 @@ footer p { max-width: 90ch; }
       <dl class="dets">
         <div><dt>Product detector, <code>Re{z}</code></dt><dd>For SSB, CW and FSK. A classic receiver multiplies by a beat-frequency oscillator (BFO) and keeps the real part. Here the shift in section 9 is the BFO.</dd></div>
         <div><dt>Envelope, <code>|z|</code></dt><dd>The diode detector of a crystal set. It ignores phase, so tuning errors do not matter, but it distorts when one sideband is missing or the carrier fades.</dd></div>
-        <div><dt>Synchronous AM, <code>Re{z·e<sup>−jφ̂</sup>}</code></dt><dd>A phase-locked loop follows the carrier and rotates it onto the real axis: a product detector that tunes itself. It still works on a single sideband plus carrier, which halves the noise bandwidth and lets you avoid interference on the other side. Try the “Synchronous AM” preset, then switch to the product detector.</dd></div>
-        <div><dt>FM discriminator, <code>arg(z[n]·z*[n−1])</code></dt><dd>The phase step between samples is the instantaneous frequency. This only works with I and Q, because a real signal has no phase to measure. On the FSK station it recovers the data bits as a square wave.</dd></div>
       </dl>
+      <details class="adv" id="adv-det">
+        <summary><span class="adv-t">More detectors: synchronous AM and FM</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Detectors that use the phase of z: a phase-locked loop for AM and a discriminator for FM.</span></summary>
+        <div class="adv-body">
+          <dl class="dets">
+            <div><dt>Synchronous AM, <code>Re{z·e<sup>−jφ̂</sup>}</code></dt><dd>A phase-locked loop follows the carrier and rotates it onto the real axis: a product detector that tunes itself. It still works on a single sideband plus carrier, which halves the noise bandwidth and lets you avoid interference on the other side. Try the “Synchronous AM” preset, then switch to the product detector.</dd></div>
+            <div><dt>FM discriminator, <code>arg(z[n]·z*[n−1])</code></dt><dd>The phase step between samples is the instantaneous frequency. This only works with I and Q, because a real signal has no phase to measure. On the FSK station it recovers the data bits as a square wave.</dd></div>
+          </dl>
+          <div><button class="btn" type="button" data-preset="fm">Tune the NBFM station</button> <button class="btn" type="button" data-preset="sync">Load synchronous AM</button></div>
+        </div>
+      </details>
       <div class="controls" data-controls="out"></div>
       <p class="note mono" id="detInfo"></p>
       <div class="plots"><div data-plot="outScope"></div><div data-plot="outSpec"></div></div>
@@ -637,7 +700,7 @@ function buildStations() {
 
 // ---------- parameters ----------
 const P = {
-  noise: 0.03, stAM: true, stISB: true, stCW: true, stFM: true, stFSK: true,
+  noise: 0, stAM: true, stISB: true, stCW: true, stFM: true, stFSK: true,
   ifOn: true, adcDiv: 1, rx: 'iq',
   preOn: true, preC: 7500, preBW: 4000, preOrder: 4,
   loF: 7500, loWave: 'sine',
@@ -659,8 +722,8 @@ const FMT = {
 };
 
 const CONTROLS = {
+  noise: [{ k: 'noise', label: 'Noise level (σ)', min: 0, max: 0.3, step: 0.005, fmt: 'amp' }],
   rf: [
-    { k: 'noise', label: 'Noise level (σ)', min: 0, max: 0.3, step: 0.005, fmt: 'amp' },
     { k: 'stAM', type: 'chk', label: 'AM 3 kHz' },
     { k: 'stISB', type: 'chk', label: 'ISB 7.5 kHz' },
     { k: 'stCW', type: 'chk', label: 'CW 11.0 / 11.4 kHz' },
@@ -674,7 +737,9 @@ const CONTROLS = {
     { k: 'preOrder', label: 'Order', min: 1, max: 8, step: 1, fmt: 'order' }
   ],
   lo: [
-    { k: 'loF', label: 'LO frequency', min: 100, max: 15900, step: 5, fmt: 'lo' },
+    { k: 'loF', label: 'LO frequency', min: 100, max: 15900, step: 5, fmt: 'lo' }
+  ],
+  lowave: [
     { k: 'loWave', type: 'sel', label: 'LO waveform', opts: [['sine', 'Sine (ideal multiplier)'], ['square', 'Square (switching mixer)']] }
   ],
   mix: [
@@ -685,16 +750,15 @@ const CONTROLS = {
   ],
   if: [
     { k: 'ifCut', label: 'Cut-off (−3 dB)', min: 50, max: 8000, step: 10, fmt: 'hz' },
-    { k: 'ifOrder', label: 'Order', min: 1, max: 10, step: 1, fmt: 'order' },
-    { k: 'ifOn', type: 'chk', label: 'IF filter in circuit' }
+    { k: 'ifOrder', label: 'Order', min: 1, max: 10, step: 1, fmt: 'order' }
   ],
   adc: [
     { k: 'adcDiv', type: 'sel', num: true, label: 'Sample rate f<sub>s</sub>', opts: [[1, '32 kHz (±16 kHz)'], [2, '16 kHz (±8 kHz)'], [4, '8 kHz (±4 kHz)'], [8, '4 kHz (±2 kHz)'], [16, '2 kHz (±1 kHz)']] },
-    { k: 'ifOn', type: 'chk', label: 'IF filter in circuit (anti-alias)', id: 'ifOn2' }
+    { k: 'ifOn', type: 'chk', label: 'IF filter in circuit (anti-alias)' }
   ],
   corr: [{ k: 'corr', type: 'chk', label: 'Apply DC, gain and phase correction' }],
+  rx: [{ k: 'rx', type: 'sel', label: 'Receiver', opts: [['iq', 'I + jQ (image-rejecting)'], ['real', 'Single mixer, I only']] }],
   dft: [
-    { k: 'rx', type: 'sel', label: 'Receiver', opts: [['iq', 'I + jQ (image-rejecting)'], ['real', 'Single mixer, I only']] },
     { k: 'selC', label: 'Mask centre', min: -8000, max: 8000, step: 10, fmt: 'shz' },
     { k: 'selW', label: 'Mask width', min: 20, max: 8000, step: 10, fmt: 'hz' },
     { k: 'shift', label: 'Frequency shift', min: -4000, max: 4000, step: 10, fmt: 'shz' }
@@ -730,28 +794,28 @@ const PRESETS = [
   { id: 'cw', name: 'CW beacon · 11.0 kHz', f: '11.000 kHz · CW', title: '“SDR” beacon',
     desc: 'Same tuning, mask moved to +700 Hz: now only the slow beacon is heard and the CQ call is gone.',
     p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 700, selW: 150 } },
-  { id: 'fm', name: 'NBFM · 12.75 kHz', f: '12.750 kHz · FM', title: 'A tune on narrowband FM',
+  { id: 'fm', opens: 'adv-det', name: 'NBFM · 12.75 kHz', f: '12.750 kHz · FM', title: 'A tune on narrowband FM',
     desc: 'Constant amplitude, the tune is in the phase. Only the FM discriminator recovers it; try Re{z} or |z| instead.',
     p: { preC: 12750, preBW: 3000, loF: 12750, ifCut: 1500, selC: 0, selW: 2600, demod: 'fm', adcDiv: 4 } },
-  { id: 'sync', name: 'Synchronous AM, one sideband', f: '3.000 kHz · AM', title: 'Synchronous AM',
+  { id: 'sync', exp: true, opens: 'adv-det', name: 'Synchronous AM, one sideband', f: 'Section 10 · detectors', title: 'Synchronous AM',
     desc: 'LO 50 Hz low, and the mask keeps only the carrier and upper sideband: half the bandwidth, so half the noise. The PLL finds the carrier and locks. Switch to the product detector to hear the 50 Hz offset it removes.',
     p: { preC: 3000, preBW: 4000, loF: 2950, ifCut: 1800, selC: 800, selW: 1700, demod: 'sync', adcDiv: 4 } },
   { id: 'fsk', name: 'FSK data · 15 kHz', f: '15.000 kHz · FSK', title: 'Data at 62.5 baud',
     desc: 'Mark and space at ±250 Hz, shifted up by 1.2 kHz into a comfortable pitch.',
     p: { preC: 15000, preBW: 1500, loF: 15000, ifCut: 600, selC: 0, selW: 800, shift: 1200 } },
-  { id: 'lowif', name: 'Low-IF: tuned 500 Hz low', f: 'demo', title: 'Low-IF tuning',
+  { id: 'lowif', exp: true, name: 'Low-IF: tuned 500 Hz low', f: 'Section 9 · shift', title: 'Low-IF tuning',
     desc: 'LO at 7.0 kHz puts the upper sideband at +500…+2100 Hz. The DFT stage selects it and shifts it back by −500 Hz.',
     p: { preC: 7500, preBW: 4000, loF: 7000, ifCut: 2400, selC: 1300, selW: 1500, shift: -500 } },
-  { id: 'trap', name: '3rd-harmonic trap', f: 'demo', title: 'Square LO, no preselector',
+  { id: 'trap', exp: true, opens: 'adv-lo', name: '3rd-harmonic trap', f: 'Section 3 · LO harmonics', title: 'Square LO, no preselector',
     desc: 'A square LO at 5 kHz also mixes at 15 kHz, so the FSK station appears. Narrow the preselector around 5 kHz, or switch to a sine LO, to remove it.',
     p: { preC: 8000, preBW: 16000, loF: 5000, loWave: 'square', ifCut: 800, selC: 0, selW: 1000, shift: 1200 } },
-  { id: 'alias', name: 'Aliasing: no anti-alias filter', f: 'demo', title: 'Aliasing',
+  { id: 'alias', exp: true, opens: 'sec-adc', name: 'Aliasing: no anti-alias filter', f: 'Section 6 · sampling', title: 'Aliasing',
     desc: 'ISB upper sampled at 4 kHz with the IF filter switched off. Every station folds into the ±2 kHz band. Switch the IF filter back on in section 6.',
     p: { preC: 8000, preBW: 16000, loF: 7500, ifCut: 1800, ifOn: false, adcDiv: 8, selC: 850, selW: 1500 } },
-  { id: 'real', name: 'Single-mixer receiver', f: 'demo', title: 'No Q channel',
+  { id: 'real', exp: true, opens: 'adv-rx', name: 'Single-mixer receiver', f: 'Section 9 · receiver', title: 'No Q channel',
     desc: 'ISB upper heard through I alone. The melody and the bass line cannot be separated. Switch the receiver back to I + jQ in section 9.',
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, rx: 'real' } },
-  { id: 'imb', name: 'Mismatched mixer (stage 2)', f: 'demo', title: 'Gain and phase errors',
+  { id: 'imb', exp: true, opens: 'sec-iq', name: 'Mismatched mixer', f: 'Section 8 · IQ mismatch', title: 'Gain and phase errors',
     desc: 'ISB upper with 1.5 dB and 8° of quadrature error plus DC. The bass line leaks into the melody. Turn on correction in section 8.',
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, gainErrDb: 1.5, phaseErrDeg: 8, dcI: 0.01, dcQ: -0.008 } }
 ];
@@ -947,6 +1011,20 @@ function applyPreset(id) {
   const vals = Object.assign({}, BASE, pr.p);
   for (const k in vals) setParam(k, vals[k]);
   document.getElementById('preset').value = id;
+  if (pr.opens) document.getElementById(pr.opens).open = true;
+  return pr;
+}
+// A panel is flagged when any of its settings is away from the ideal receiver.
+const NOT_IDEAL = {
+  'adv-noise': () => P.noise > 0,
+  'adv-lo': () => P.loWave !== 'sine',
+  'sec-adc': () => P.adcDiv !== 1 || !P.ifOn,
+  'sec-iq': () => !!(P.gainErrDb || P.phaseErrDeg || P.dcI || P.dcQ),
+  'adv-rx': () => P.rx !== 'iq',
+  'adv-det': () => P.demod === 'sync' || P.demod === 'fm'
+};
+function updateBadges() {
+  for (const id in NOT_IDEAL) document.querySelector('#' + id + ' > summary .adv-badge').hidden = !NOT_IDEAL[id]();
 }
 
 // ---------- audio ----------
@@ -1296,6 +1374,7 @@ function drawXY(pl) {
 
 // ---------- stats ----------
 function updateStats() {
+  updateBadges();
   document.getElementById('detInfo').textContent = DET.text;
   const $ = id => document.getElementById(id), f4 = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(4);
   const irr = (g, phDeg) => {
@@ -1325,15 +1404,19 @@ function anim() {
 function boot() {
   readColors();
   // presets: station cards and the transport menu
-  const sel = document.getElementById('preset'), box = document.getElementById('stations');
+  const sel = document.getElementById('preset');
+  const groups = { st: document.createElement('optgroup'), ex: document.createElement('optgroup') };
+  groups.st.label = 'Stations'; groups.ex.label = 'Experiments'; sel.append(groups.st, groups.ex);
+  const scrollTo = el => el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   for (const pr of PRESETS) {
-    const o = document.createElement('option'); o.value = pr.id; o.textContent = pr.name; sel.append(o);
+    const o = document.createElement('option'); o.value = pr.id; o.textContent = pr.name; (pr.exp ? groups.ex : groups.st).append(o);
     const d = document.createElement('div'); d.className = 'stn';
     d.innerHTML = `<span class="f">${pr.f}</span><b>${pr.title}</b><p>${pr.desc}</p>`;
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = 'Tune';
-    b.addEventListener('click', () => { applyPreset(pr.id); document.getElementById('s-rf').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); });
-    d.append(b); box.append(d);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = pr.exp ? 'Try it' : 'Tune';
+    b.addEventListener('click', () => { applyPreset(pr.id); scrollTo(pr.exp && pr.opens ? document.getElementById(pr.opens) : document.getElementById('s-rf')); });
+    d.append(b); document.getElementById(pr.exp ? 'experiments' : 'stations').append(d);
   }
+  for (const b of document.querySelectorAll('[data-preset]')) b.addEventListener('click', () => applyPreset(b.dataset.preset));
   sel.addEventListener('change', () => { if (sel.value) applyPreset(sel.value); });
   document.getElementById('vol').addEventListener('input', e => { if (master) master.gain.setTargetAtTime(+e.target.value, ctx.currentTime, 0.02); });
   document.getElementById('stop').addEventListener('click', stopPlay);
