@@ -236,7 +236,7 @@ footer p { max-width: 90ch; }
     <div class="eyebrow">Quadrature direct-conversion receiver · simulated at 32 kHz · 4.096 s loop</div>
     <h1>Audible SDR</h1>
     <p class="byline">By Ali Raheem, <b>G3ALI</b> · <a href="https://g3ali.com/">g3ali.com</a> · <a href="https://github.com/ali-raheem/audible-sdr">Source on GitHub</a></p>
-    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with six transmissions between 3 and 15 kHz, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right. The waterfalls scroll with playback, newest at the top, so you can watch the Morse being keyed and the notes changing.</p>
+    <p class="lede">This webpage shows the inner workings of what a basic typical software-defined radio, but with the frequencies shifted to be in the audible range. Instead of tuning to around 7MHz the "RF" is a 32 kHz sampled signal with 6 transmissions between 3 and 15kHz. Each stage is laid out as the waveoform of the signals, audio, spectrum/waterfall or other display as appropriate.</p>
 
     <div class="flow-wrap">
       <svg class="flow" viewBox="0 0 1010 200" role="img" aria-label="Signal flow: antenna, preselector, two mixers fed by a quadrature LO, IF low-pass filters, ADCs, then I plus jQ, IQ correction, DFT, mask and shift, inverse DFT, real part, speaker">
@@ -296,24 +296,24 @@ footer p { max-width: 90ch; }
       <h3 style="margin-bottom:10px">On the air</h3>
       <div class="stations" id="stations"></div>
     </div>
-    <p class="note">The page opens as an ideal receiver: no noise, perfect parts, no compromises. Work through it top to bottom first. The dashed panels hold the real-world complications and are closed until you want them. A panel marked <b class="adv-badge-inline">active</b> has a setting that is not ideal.</p>
+    <p class="note">The page opens as an idealized receiver, withou faults or noise but once you're comfortable you can enable issues to work around. Active noise/fault panels are marked <b class="adv-badge-inline">active</b>.</p>
     <details class="adv" id="adv-exp">
-        <summary><span class="adv-t">Experiments</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Ready-made demonstrations of real-world faults and limits. Each one opens the panel it needs.</span></summary>
+        <summary><span class="adv-t">Experiments</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Here are some ready made experiments to try, although I'd suggest working through tuning manually first before having a look.</span></summary>
         <div class="adv-body">
           <div class="stations" id="experiments"></div>
         </div>
       </details>
-    <p class="note">Each Play button scales its own buffer to a comfortable level, so quiet stages are still audible. To compare levels, use the spectra: they share one dBFS scale, where a full-scale sine reads 0 dB.</p>
+    <p class="note">The play buttons should be comfortable and audible. If you want to compare levels use the spectra and look at the dB scales. Full scale is 0dB.</p>
   </section>
 
   <section class="stage" id="s-rf">
     <div class="rail"><div class="num">1</div></div>
     <div class="body">
       <div class="shead"><h2>Antenna</h2><span class="dom analog">analog</span></div>
-      <p>Everything arrives at once. Listen and you can pick out the AM carrier as a steady 3 kHz whistle, two Morse signals at 11 kHz (a slow beacon and G3ALI calling CQ), a narrowband FM tune at 12.75 kHz and the 15 kHz data signal, which many adults barely hear. The two programmes on the 7.5 kHz ISB station are there too, but at this point they sound like scrambled noise. Drag on the spectrum to tune the receiver.</p>
+      <p>The entire signal arrives at the antenna at once. The chaos you hear is just what the antenna hears as a mixture of different frequencies in different patterns and encodings.</p>
       <div class="controls" data-controls="rf"></div>
       <details class="adv" id="adv-noise">
-        <summary><span class="adv-t">Noise</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Add receiver noise and see why a narrower filter lets you hear weaker signals.</span></summary>
+        <summary><span class="adv-t">Noise</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Real life, even very good setups will have noise either from other signals, atmospheric noise depending on the RF band. Try adding some noise even at a low level (0.015 say).</span></summary>
         <div class="adv-body">
           <p class="note">Every real receiver adds noise, and noise is spread across the whole band while a signal sits in one place. Each filter that narrows the band removes noise but keeps the signal, so the signal-to-noise ratio improves by 10·log₁₀ of the bandwidth ratio. Going from a 2 kHz SSB-sized mask to 150 Hz for CW gains about 11 dB, which is why CW gets through when voice does not. FM behaves differently: it is clean down to a threshold and then breaks up suddenly. Try the CQ and NBFM presets as you raise the noise.</p>
           <div class="controls" data-controls="noise"></div>
@@ -328,7 +328,7 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">2</div></div>
     <div class="body">
       <div class="shead"><h2>RF preselector</h2><span class="dom analog">analog</span></div>
-      <p>A band-pass filter before the mixer. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it.</p>
+      <p>The RF preselector is a bandpass filter before the mixer and rest of the SDR. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it. Real designs for filters quickly become combersome and might be impractical in terms of cost of parts, quality of parts or ease of tuning.</p>
       <div class="controls" data-controls="pre"></div>
       <div class="plots"><div data-plot="preScope"></div><div data-plot="preSpec"></div></div>
     </div>
@@ -338,7 +338,7 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">3</div></div>
     <div class="body">
       <div class="shead"><h2>Local oscillator</h2><span class="dom analog">analog</span></div>
-      <p>One oscillator, two outputs 90° apart: <code>LO<sub>I</sub> = cos(2πf<sub>LO</sub>t)</code> and <code>LO<sub>Q</sub> = −sin(2πf<sub>LO</sub>t)</code>. Played separately they sound identical. The difference is only phase, which the X–Y plot shows as a circle; with no quadrature it would collapse to a line. The frequency is rounded to a multiple of 0.244 Hz so the loop stays seamless.</p>
+      <p>One oscillator, two outputs 90° apart: <code>LO<sub>I</sub> = cos(2πf<sub>LO</sub>t)</code> and <code>LO<sub>Q</sub> = −sin(2πf<sub>LO</sub>t)</code>. Played separately they sound identical. The difference is only phase, which the X–Y plot shows as a circle; with no quadrature it would collapse to a line. The frequency is rounded to a multiple of 0.244 Hz so the loop stays seamless. You can pick between ideal sine waves, and more common square waves. Square waves are the base sine wave with odd harmonics added.</p>
       <div class="controls" data-controls="lo"></div>
       <details class="adv" id="adv-lo">
         <summary><span class="adv-t">Switching mixers and LO harmonics</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Why a square-wave LO also receives at 3× and 5× its frequency, and how the preselector stops it.</span></summary>
@@ -356,7 +356,7 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">4</div></div>
     <div class="body">
       <div class="shead"><h2>Mixers</h2><span class="dom analog">analog</span></div>
-      <p>Each path multiplies the preselected signal by its LO, which makes sum and difference frequencies. A station at <code>f<sub>LO</sub> + Δ</code> lands at Δ and at <code>2f<sub>LO</sub> + Δ</code>. The I output on its own cannot tell <code>f<sub>LO</sub> + Δ</code> from <code>f<sub>LO</sub> − Δ</code>: both fold onto the same audio frequency. With the ISB preset, play I alone and you hear the melody and the bass line on top of each other. Q has the same spectrum magnitude but a different phase, and that phase is what separates them later.</p>
+      <p>Each path mixes (multiplies) the preselected signal by its LO, the result of this is signals at frequencies of sum and differences. A station at <code>f<sub>LO</sub> + Δ</code> lands at Δ and at <code>2f<sub>LO</sub> + Δ</code>. The I output on its own cannot tell <code>f<sub>LO</sub> + Δ</code> from <code>f<sub>LO</sub> − Δ</code>: both fold onto the same audio frequency. This is called an image. With the ISB preset, play I alone and you hear the melody and the bass line on top of each other. Q has the same spectrum magnitude but a different phase, and that phase is what separates them later.</p>
       <div class="plots"><div data-plot="mixScope"></div><div data-plot="mixSpec"></div></div>
       <p class="note">Real mixers are not perfect: the Q branch may have a little more gain than I, the LO split may not be exactly 90°, and LO leakage adds DC. Section 8 covers what that does and how to remove it digitally.</p>
     </div>

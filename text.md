@@ -23,13 +23,14 @@ Audible SDR
 By Ali Raheem, **G3ALI** · [g3ali.com](https://g3ali.com/) · [Source on GitHub](https://github.com/ali-raheem/audible-sdr)
 
 ## intro.lede
-A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with six transmissions between 3 and 15 kHz, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right. The waterfalls scroll with playback, newest at the top, so you can watch the Morse being keyed and the notes changing.
+This webpage shows the inner workings of what a basic typical software-defined radio, but with the frequencies shifted to be in the audible range. Instead of tuning to around 7MHz the "RF" is a 32 kHz sampled signal with 6 transmissions between 3 and 15kHz. Each stage is laid out as the waveoform of the signals, audio, spectrum/waterfall or other display as appropriate.
 
 ## intro.heading1
 On the air
 
 ## intro.p2
-The page opens as an ideal receiver: no noise, perfect parts, no compromises. Work through it top to bottom first. The dashed panels hold the real-world complications and are closed until you want them. A panel marked <b class="adv-badge-inline">active</b> has a setting that is not ideal.
+The page opens as an idealized receiver, withou faults or noise but once you're comfortable you can enable issues to work around.
+Active noise/fault panels are marked <b class="adv-badge-inline">active</b>.
 
 
 # Introduction · Experiments panel
@@ -38,14 +39,12 @@ The page opens as an ideal receiver: no noise, perfect parts, no compromises. Wo
 Experiments
 
 ## experiments.summary
-Ready-made demonstrations of real-world faults and limits. Each one opens the panel it needs.
-
+Here are some ready made experiments to try, although I'd suggest working through tuning manually first before having a look.
 
 # Introduction
 
 ## intro.p3
-Each Play button scales its own buffer to a comfortable level, so quiet stages are still audible. To compare levels, use the spectra: they share one dBFS scale, where a full-scale sine reads 0 dB.
-
+The play buttons should be comfortable and audible. If you want to compare levels use the spectra and look at the dB scales. Full scale is 0dB.
 
 # 1 · Antenna
 
@@ -53,8 +52,7 @@ Each Play button scales its own buffer to a comfortable level, so quiet stages a
 Antenna
 
 ## antenna.p1
-Everything arrives at once. Listen and you can pick out the AM carrier as a steady 3 kHz whistle, two Morse signals at 11 kHz (a slow beacon and G3ALI calling CQ), a narrowband FM tune at 12.75 kHz and the 15 kHz data signal, which many adults barely hear. The two programmes on the 7.5 kHz ISB station are there too, but at this point they sound like scrambled noise. Drag on the spectrum to tune the receiver.
-
+The entire signal arrives at the antenna at once. The chaos you hear is just what the antenna hears as a mixture of different frequencies in different patterns and encodings.
 
 # 1 · Antenna · Noise panel
 
@@ -62,7 +60,7 @@ Everything arrives at once. Listen and you can pick out the AM carrier as a stea
 Noise
 
 ## noise.summary
-Add receiver noise and see why a narrower filter lets you hear weaker signals.
+Real life, even very good setups will have noise either from other signals, atmospheric noise depending on the RF band. Try adding some noise even at a low level (0.015 say).
 
 ## noise.p1
 Every real receiver adds noise, and noise is spread across the whole band while a signal sits in one place. Each filter that narrows the band removes noise but keeps the signal, so the signal-to-noise ratio improves by 10·log₁₀ of the bandwidth ratio. Going from a 2 kHz SSB-sized mask to 150 Hz for CW gains about 11 dB, which is why CW gets through when voice does not. FM behaves differently: it is clean down to a threshold and then breaks up suddenly. Try the CQ and NBFM presets as you raise the noise.
@@ -74,7 +72,7 @@ Every real receiver adds noise, and noise is spread across the whole band while 
 RF preselector
 
 ## preselector.p1
-A band-pass filter before the mixer. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it.
+The RF preselector is a bandpass filter before the mixer and rest of the SDR. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it. Real designs for filters quickly become combersome and might be impractical in terms of cost of parts, quality of parts or ease of tuning.
 
 
 # 3 · Local oscillator
@@ -83,7 +81,7 @@ A band-pass filter before the mixer. An ideal multiplier would not need it, but 
 Local oscillator
 
 ## lo.p1
-One oscillator, two outputs 90° apart: `LO<sub>I</sub> = cos(2πf<sub>LO</sub>t)` and `LO<sub>Q</sub> = −sin(2πf<sub>LO</sub>t)`. Played separately they sound identical. The difference is only phase, which the X–Y plot shows as a circle; with no quadrature it would collapse to a line. The frequency is rounded to a multiple of 0.244 Hz so the loop stays seamless.
+One oscillator, two outputs 90° apart: `LO<sub>I</sub> = cos(2πf<sub>LO</sub>t)` and `LO<sub>Q</sub> = −sin(2πf<sub>LO</sub>t)`. Played separately they sound identical. The difference is only phase, which the X–Y plot shows as a circle; with no quadrature it would collapse to a line. The frequency is rounded to a multiple of 0.244 Hz so the loop stays seamless. You can pick between ideal sine waves, and more common square waves. Square waves are the base sine wave with odd harmonics added.
 
 
 # 3 · LO · Switching mixers panel
@@ -104,7 +102,7 @@ Many SDRs, such as the Tayloe detector in the SoftRock, use switches instead of 
 Mixers
 
 ## mixer.p1
-Each path multiplies the preselected signal by its LO, which makes sum and difference frequencies. A station at `f<sub>LO</sub> + Δ` lands at Δ and at `2f<sub>LO</sub> + Δ`. The I output on its own cannot tell `f<sub>LO</sub> + Δ` from `f<sub>LO</sub> − Δ`: both fold onto the same audio frequency. With the ISB preset, play I alone and you hear the melody and the bass line on top of each other. Q has the same spectrum magnitude but a different phase, and that phase is what separates them later.
+Each path mixes (multiplies) the preselected signal by its LO, the result of this is signals at frequencies of sum and differences. A station at `f<sub>LO</sub> + Δ` lands at Δ and at `2f<sub>LO</sub> + Δ`. The I output on its own cannot tell `f<sub>LO</sub> + Δ` from `f<sub>LO</sub> − Δ`: both fold onto the same audio frequency. This is called an image. With the ISB preset, play I alone and you hear the melody and the bass line on top of each other. Q has the same spectrum magnitude but a different phase, and that phase is what separates them later.
 
 ## mixer.p2
 Real mixers are not perfect: the Q branch may have a little more gain than I, the LO split may not be exactly 90°, and LO leakage adds DC. Section 8 covers what that does and how to remove it digitally.
