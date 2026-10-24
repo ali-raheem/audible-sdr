@@ -10,4 +10,8 @@ Plain JavaScript, no build step, no dependencies. Open `index.html` in a browser
 
 By Ali Raheem, G3ALI — https://g3ali.com/sdr/ (mirror: https://ali-raheem.github.io/audible-sdr/)
 
-`audible-sdr.html` is the source page without the document wrapper; run `./build.sh` to regenerate the standalone `index.html`.
+## Editing
+
+- **Words:** everything you read on the page is in [`text.md`](text.md), one `## key` block per paragraph, heading or caption, grouped by section. Light formatting works: `` `code` ``, `*italic*`, `**bold**`, `[link](url)`, and inline HTML such as `f<sub>LO</sub>`.
+- **Layout, controls and DSP:** [`src/page.html`](src/page.html). The `{{key}}` markers in it are filled from `text.md`.
+- **Build:** `./build.sh` (Python 3, no packages) writes `audible-sdr.html` (the page body, also used for the claude.ai artifact) and the standalone `index.html`. It stops if a key used by the page is missing from `text.md`. Don't edit those two generated files by hand.

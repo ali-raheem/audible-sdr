@@ -1,0 +1,1667 @@
+<title>Audible SDR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one signal-chain column read top to bottom; a rail on the left joins the numbered receiver stages like a block diagram. Instrument screens stay dark in both themes. */
+:root {
+  --bg: #e8ebe6;
+  --panel: #f5f6f2;
+  --ink: #17201c;
+  --muted: #55625b;
+  --rule: #c6cdc6;
+  --accent: #9a5600;
+  --accent-ink: #ffffff;
+  --lineI: #a86c00;
+  --lineQ: #0b7f8e;
+  --analog: #9a5600;
+  --digital: #1f6787;
+  --screen: #0b1210;
+  --screen-ink: #b9c9c1;
+  --grid: #1b2823;
+  --grid-strong: #2c3d36;
+  --gridtxt: #7a9086;
+  --trI: #ffb21e;
+  --trQ: #36c9dc;
+  --trZ: #ff6aa8;
+  --trZ-ink: #b0216a;
+  --trF: #8be07a;
+  --ghost: #3a4d45;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1210; --panel: #131a17; --ink: #dce4df; --muted: #8e9e96; --rule: #26322d;
+    --accent: #ffb21e; --accent-ink: #1a1200; --lineI: #ffb21e; --lineQ: #36c9dc;
+    --analog: #ffb21e; --digital: #5fb7dc; --trZ-ink: #ff6aa8; --screen: #060a09; --screen-ink: #b9c9c1;
+    --grid: #16211d; --grid-strong: #253530; --gridtxt: #71877d; --ghost: #33463e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1210; --panel: #131a17; --ink: #dce4df; --muted: #8e9e96; --rule: #26322d;
+  --accent: #ffb21e; --accent-ink: #1a1200; --lineI: #ffb21e; --lineQ: #36c9dc;
+  --analog: #ffb21e; --digital: #5fb7dc; --trZ-ink: #ff6aa8; --screen: #060a09; --screen-ink: #b9c9c1;
+  --grid: #16211d; --grid-strong: #253530; --gridtxt: #71877d; --ghost: #33463e;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.6 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel); }
+.wrap { max-width: 1180px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800; font-stretch: 112%; letter-spacing: -0.01em; }
+h2 { font-size: 1.5rem; font-weight: 700; font-stretch: 105%; }
+h3 { font-size: 1rem; font-weight: 700; font-stretch: 100%; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+p { margin: 0; max-width: 72ch; }
+code, .mono { font-family: var(--f-mono); font-size: 0.9em; }
+a { color: var(--accent); }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* transport */
+.transport {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--panel); border-bottom: 1px solid var(--rule);
+}
+.transport .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+.np { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 260px; }
+.np-label { font-family: var(--f-mono); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-label b { color: var(--accent); font-weight: 500; }
+.prog { flex: 1 1 80px; height: 4px; background: var(--rule); border-radius: 2px; overflow: hidden; min-width: 60px; }
+.prog i { display: block; height: 100%; width: 0; background: var(--accent); }
+.tctl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.tctl select { background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 6px; color: var(--ink); max-width: 230px; }
+.btn { border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 4px; padding: 3px 12px; cursor: pointer; font-size: 13px; }
+.btn:hover { background: var(--accent); color: var(--accent-ink); }
+.btn.solid { background: var(--accent); color: var(--accent-ink); }
+
+/* intro */
+.intro { padding-block: 40px 28px; display: grid; gap: 22px; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.byline { font-family: var(--f-mono); font-size: 13px; color: var(--muted); margin-top: -12px; }
+.byline b { color: var(--accent); font-weight: 500; }
+.lede { font-size: 1.1rem; max-width: 70ch; }
+.flow-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); padding: 10px; }
+.flow { display: block; width: 100%; min-width: 760px; height: auto; }
+.flow .w { fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.flow .wI { fill: none; stroke: var(--lineI); stroke-width: 1.8; }
+.flow .wQ { fill: none; stroke: var(--lineQ); stroke-width: 1.8; }
+.flow .arh { fill: var(--muted); }
+.flow .blk { fill: var(--bg); stroke: var(--ink); stroke-width: 1.3; }
+.flow a:hover .blk, .flow a:focus .blk { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
+.flow text { fill: var(--ink); font: 500 12px var(--f-body); text-anchor: middle; }
+.flow text.sub { fill: var(--muted); font: 400 10.5px var(--f-mono); }
+.flow text.dom { font: 500 11px var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.flow .xmark { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+.flow .bound { stroke: var(--muted); stroke-dasharray: 4 4; fill: none; }
+.flow .dot { fill: var(--muted); }
+
+.stations { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 10px; }
+.stn { border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; background: var(--panel); }
+.stn .f { font-family: var(--f-mono); font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+.stn b { font-family: var(--f-display); font-weight: 700; font-size: 1.02rem; }
+.stn p { font-size: 13.5px; color: var(--muted); }
+.stn .btn { justify-self: start; margin-top: 2px; }
+.note { font-size: 13.5px; color: var(--muted); }
+
+/* stages */
+.stage { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 0 1.25rem; padding-block: 36px; border-top: 1px solid var(--rule); }
+.rail { position: relative; }
+.rail .num {
+  width: 2.6rem; height: 2.6rem; border-radius: 50%; display: grid; place-items: center;
+  font: 500 15px var(--f-mono); border: 2px solid var(--analog); color: var(--analog); background: var(--bg); position: relative; z-index: 1;
+}
+.stage.digital .rail .num { border-color: var(--digital); color: var(--digital); }
+.rail::after { content: ""; position: absolute; left: calc(1.3rem - 1px); top: 2.6rem; bottom: -36px; width: 2px; background: var(--rule); }
+.stage:last-of-type .rail::after { display: none; }
+.body { display: grid; gap: 16px; min-width: 0; }
+.shead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.dom { font: 500 11px var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; border: 1px solid currentColor; }
+.dom.analog { color: var(--analog); }
+.dom.digital { color: var(--digital); }
+.body p em { font-style: italic; }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: end; }
+.ctl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; width: min(100%, 250px); font-size: 13px; }
+.ctl .lab { color: var(--muted); }
+.ctl output { font-family: var(--f-mono); font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.ctl input[type=range], .ctl select { grid-column: 1 / -1; width: 100%; }
+.ctl input[type=range] { accent-color: var(--accent); margin: 2px 0; }
+.ctl select { background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 4px 6px; color: var(--ink); }
+.chk { display: inline-flex; gap: 8px; align-items: center; font-size: 13.5px; cursor: pointer; }
+.chk input { accent-color: var(--accent); width: 16px; height: 16px; }
+.sub-block { border: 1px dashed var(--rule); border-radius: 6px; padding: 14px 16px; display: grid; gap: 12px; }
+.sub-block h3 { color: var(--accent); }
+.dom.part { color: var(--trZ-ink); }
+.stage.part2 .rail .num { border-style: dashed; }
+
+.plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.plots.three { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.screen { margin: 0; background: var(--screen); border-radius: 6px; overflow: hidden; border: 1px solid var(--grid-strong); min-width: 0; }
+.shd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--grid-strong); font: 12px var(--f-mono); color: var(--screen-ink); }
+.shd .st { flex: 1 1 auto; min-width: 0; }
+.shd select { background: var(--screen); color: var(--screen-ink); border: 1px solid var(--grid-strong); border-radius: 3px; font: 11.5px var(--f-mono); padding: 2px 4px; }
+.pbtn { --c: var(--screen-ink); font: 11.5px var(--f-mono); padding: 2px 9px; border-radius: 999px; border: 1px solid var(--c); background: transparent; color: var(--c); cursor: pointer; white-space: nowrap; }
+.pbtn:hover { background: color-mix(in srgb, var(--c) 18%, transparent); }
+.pbtn[aria-pressed="true"] { background: var(--c); color: var(--screen); }
+.screen canvas { display: block; width: 100%; height: 190px; touch-action: pan-y; }
+.screen canvas.xy { height: 230px; }
+.screen canvas.wf { height: 240px; }
+.plots.wide { grid-template-columns: minmax(0, 1fr); }
+.screen canvas.drag { cursor: ew-resize; }
+
+.stats { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.stats-wrap { overflow-x: auto; }
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px 24px; align-items: center; }
+.smeter { background: var(--screen); border: 1px solid var(--grid-strong); border-radius: 6px; padding: 10px 14px 8px; font: 11px var(--f-mono); color: var(--gridtxt); }
+.sm-scale { position: relative; height: 16px; }
+.sm-scale span { position: absolute; transform: translateX(-50%); }
+.sm-scale span.over { color: var(--trZ); }
+.sm-track { position: relative; height: 12px; background: var(--grid); border-radius: 2px; overflow: hidden; }
+.sm-track i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--trQ) 0%, var(--trI) 55%, var(--trZ) 60%, var(--trZ) 100%); background-size: var(--full, 100%) 100%; }
+.sm-track b { position: absolute; top: 0; bottom: 0; width: 2px; left: 0; background: var(--screen-ink); }
+.sm-foot { display: flex; justify-content: space-between; margin-top: 4px; }
+.readouts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; }
+.readouts dt { font-size: 12px; color: var(--muted); }
+.readouts dd { margin: 0; font: 500 1.25rem var(--f-mono); font-variant-numeric: tabular-nums; }
+.readouts dd small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.tchip { font: 500 12.5px var(--f-mono); padding: 2px 8px; border-radius: 4px; background: var(--screen); color: var(--trI); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.adv { border: 1px dashed var(--rule); border-radius: 6px; min-width: 0; }
+.adv > summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: auto auto 1fr; gap: 2px 10px; align-items: baseline; padding: 10px 14px; border-radius: 6px; }
+.adv > summary::-webkit-details-marker { display: none; }
+.adv > summary:hover { background: var(--panel); }
+.adv-t { font-family: var(--f-display); font-weight: 700; font-size: 1rem; }
+.adv-t::before { content: "▸"; display: inline-block; width: 1.1em; color: var(--accent); transition: transform .15s; }
+.adv[open] > summary .adv-t::before { transform: rotate(90deg); }
+.adv-a { justify-self: end; grid-column: 3; grid-row: 1; font: 12px var(--f-mono); color: var(--accent); }
+.adv-a::before { content: "Show"; }
+.adv[open] > summary .adv-a::before { content: "Hide"; }
+.adv-l { grid-column: 1 / -1; color: var(--muted); font-size: 13.5px; padding-left: 1.1em; }
+.adv-badge, .adv-badge-inline { font: 500 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--trZ-ink); border: 1px solid currentColor; border-radius: 3px; padding: 0 5px; }
+.adv-body { display: grid; gap: 14px; padding: 4px 14px 16px; min-width: 0; }
+.adv.sect { border-color: var(--rule); background: transparent; }
+@media (prefers-reduced-motion: reduce) { .adv-t::before { transition: none; } }
+.dets { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 10px 22px; }
+.dets div { min-width: 0; }
+.dets dt { font-weight: 600; font-size: 14px; }
+.dets dd { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+.stats th, .stats td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.stats th { font-weight: 500; color: var(--muted); }
+.stats td { font-family: var(--f-mono); font-size: 12.5px; }
+.stats td.f { font-family: var(--f-body); color: var(--muted); font-size: 12.5px; }
+
+footer { border-top: 1px solid var(--rule); padding-block: 24px 48px; color: var(--muted); font-size: 13px; }
+footer { display: grid; gap: 10px; }
+footer p { max-width: 90ch; }
+
+@media (max-width: 640px) {
+  .stage { grid-template-columns: minmax(0, 1fr); padding-block: 28px; }
+  .rail { margin-bottom: 10px; }
+  .rail::after { display: none; }
+  .screen canvas { height: 170px; }
+}
+</style>
+
+<div class="transport" role="region" aria-label="Playback">
+  <div class="wrap">
+    <div class="np">
+      <span class="np-label" id="np">Nothing playing. Headphones recommended.</span>
+      <div class="prog" aria-hidden="true"><i id="prog"></i></div>
+    </div>
+    <label class="tctl" for="preset">Tune to
+      <select id="preset">
+        <option value="">Choose a preset…</option>
+      </select>
+    </label>
+    <label class="tctl" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.01" value="0.5"></label>
+    <label class="tctl chk" for="follow"><input type="checkbox" id="follow" checked> Scopes follow playback</label>
+    <span class="tchip" id="tS" title="S-meter and SNR in the receiver passband">S–</span>
+    <label class="tctl chk" for="wfOn" title="Waterfalls add some processing after each change"><input type="checkbox" id="wfOn" checked> Waterfalls</label>
+    <button class="btn" id="stop" type="button">Stop</button>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="intro">
+    <div class="eyebrow">{{intro.eyebrow}}</div>
+    <h1>{{intro.title}}</h1>
+    <p class="byline">{{intro.p1}}</p>
+    <p class="lede">{{intro.lede}}</p>
+
+    <div class="flow-wrap">
+      <svg class="flow" viewBox="0 0 1010 200" role="img" aria-label="Signal flow: antenna, preselector, two mixers fed by a quadrature LO, IF low-pass filters, ADCs, then I plus jQ, IQ correction, DFT, mask and shift, inverse DFT, real part, speaker">
+        <defs>
+          <marker id="ar" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="arh" d="M0,0 L8,4 L0,8 z"/></marker>
+        </defs>
+        <text class="dom" x="220" y="18" style="fill:var(--analog)">analog</text>
+        <text class="dom" x="720" y="18" style="fill:var(--digital)">digital</text>
+        <path class="bound" d="M437 26 V190"/>
+        <path class="w" d="M20 100 V66 M8 54 L20 68 L32 54"/>
+        <a href="#s-rf"><circle class="blk" cx="20" cy="100" r="6"/></a>
+        <path class="w" d="M26 100 H58" marker-end="url(#ar)"/>
+        <a href="#s-pre"><rect class="blk" x="60" y="82" width="80" height="36" rx="4"/><text x="100" y="98">Preselector</text><text class="sub" x="100" y="111">BPF</text></a>
+        <path class="w" d="M140 100 H168 M168 55 V145"/>
+        <circle class="dot" cx="168" cy="100" r="3"/>
+        <path class="wI" d="M168 55 H204" marker-end="url(#ar)"/>
+        <path class="wQ" d="M168 145 H204" marker-end="url(#ar)"/>
+        <a href="#s-mix">
+          <circle class="blk" cx="220" cy="55" r="14"/><path class="xmark" d="M211 46 L229 64 M229 46 L211 64"/>
+          <circle class="blk" cx="220" cy="145" r="14"/><path class="xmark" d="M211 136 L229 154 M229 136 L211 154"/>
+        </a>
+        <path class="wI" d="M220 86 V71" marker-end="url(#ar)"/>
+        <path class="wQ" d="M220 114 V129" marker-end="url(#ar)"/>
+        <a href="#s-lo"><rect class="blk" x="196" y="86" width="48" height="28" rx="4"/><text x="220" y="104">LO</text></a>
+        <text class="sub" x="256" y="80" style="text-anchor:start">cos</text>
+        <text class="sub" x="256" y="128" style="text-anchor:start">−sin</text>
+        <path class="wI" d="M234 55 H266" marker-end="url(#ar)"/>
+        <path class="wQ" d="M234 145 H266" marker-end="url(#ar)"/>
+        <a href="#s-if">
+          <rect class="blk" x="268" y="40" width="70" height="30" rx="4"/><text x="303" y="59">IF LPF</text>
+          <rect class="blk" x="268" y="130" width="70" height="30" rx="4"/><text x="303" y="149">IF LPF</text>
+        </a>
+        <path class="wI" d="M338 55 H360" marker-end="url(#ar)"/>
+        <path class="wQ" d="M338 145 H360" marker-end="url(#ar)"/>
+        <a href="#s-adc"><rect class="blk" x="362" y="42" width="50" height="26" rx="4"/><text x="387" y="59">ADC</text>
+        <rect class="blk" x="362" y="132" width="50" height="26" rx="4"/><text x="387" y="149">ADC</text></a>
+        <text class="sub" x="424" y="48">I</text>
+        <text class="sub" x="424" y="138">Q</text>
+        <path class="wI" d="M412 55 H497 V80" marker-end="url(#ar)"/>
+        <path class="wQ" d="M412 145 H497 V120" marker-end="url(#ar)"/>
+        <a href="#s-iq"><rect class="blk" x="462" y="82" width="70" height="36" rx="4"/><text x="497" y="98">I + jQ</text></a><a href="#s-iqfix"><text class="sub" x="497" y="111">IQ fix</text></a>
+        <path class="w" d="M532 100 H560" marker-end="url(#ar)"/>
+        <a href="#s-dft"><rect class="blk" x="562" y="82" width="56" height="36" rx="4"/><text x="590" y="104">DFT</text></a>
+        <path class="w" d="M618 100 H646" marker-end="url(#ar)"/>
+        <a href="#s-dft"><rect class="blk" x="648" y="82" width="100" height="36" rx="4"/><text x="698" y="98">Mask · Shift</text><text class="sub" x="698" y="111">×H(f), roll bins</text></a>
+        <path class="w" d="M748 100 H776" marker-end="url(#ar)"/>
+        <a href="#s-out"><rect class="blk" x="778" y="82" width="56" height="36" rx="4"/><text x="806" y="104">iDFT</text></a>
+        <path class="w" d="M834 100 H854" marker-end="url(#ar)"/>
+        <a href="#s-out"><rect class="blk" x="856" y="82" width="80" height="36" rx="4"/><text x="896" y="98">Detector</text><text class="sub" x="896" y="111">Re, |z|, PLL, FM</text></a>
+        <path class="w" d="M936 100 H956" marker-end="url(#ar)"/>
+        <path class="w" d="M960 92 H968 L984 80 V120 L968 108 H960 Z"/>
+        <path class="w" d="M990 88 Q998 100 990 112"/>
+      </svg>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:10px">{{intro.heading1}}</h3>
+      <div class="stations" id="stations"></div>
+    </div>
+    <p class="note">{{intro.p2}}</p>
+    <details class="adv" id="adv-exp">
+        <summary><span class="adv-t">{{experiments.title}}</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">{{experiments.summary}}</span></summary>
+        <div class="adv-body">
+          <div class="stations" id="experiments"></div>
+        </div>
+      </details>
+    <p class="note">{{intro.p3}}</p>
+  </section>
+
+  <section class="stage" id="s-rf">
+    <div class="rail"><div class="num">1</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{antenna.title}}</h2><span class="dom analog">analog</span></div>
+      <p>{{antenna.p1}}</p>
+      <div class="controls" data-controls="rf"></div>
+      <details class="adv" id="adv-noise">
+        <summary><span class="adv-t">{{noise.title}}</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">{{noise.summary}}</span></summary>
+        <div class="adv-body">
+          <p class="note">{{noise.p1}}</p>
+          <div class="controls" data-controls="noise"></div>
+        </div>
+      </details>
+      <div class="plots"><div data-plot="rfScope"></div><div data-plot="rfSpec"></div></div>
+      <div class="plots wide"><div data-plot="rfWf"></div></div>
+    </div>
+  </section>
+
+  <section class="stage" id="s-pre">
+    <div class="rail"><div class="num">2</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{preselector.title}}</h2><span class="dom analog">analog</span></div>
+      <p>{{preselector.p1}}</p>
+      <div class="controls" data-controls="pre"></div>
+      <div class="plots"><div data-plot="preScope"></div><div data-plot="preSpec"></div></div>
+    </div>
+  </section>
+
+  <section class="stage" id="s-lo">
+    <div class="rail"><div class="num">3</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{lo.title}}</h2><span class="dom analog">analog</span></div>
+      <p>{{lo.p1}}</p>
+      <div class="controls" data-controls="lo"></div>
+      <details class="adv" id="adv-lo">
+        <summary><span class="adv-t">{{harmonics.title}}</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">{{harmonics.summary}}</span></summary>
+        <div class="adv-body">
+          <p class="note">{{harmonics.p1}}</p>
+          <div class="controls" data-controls="lowave"></div>
+          <div><button class="btn" type="button" data-preset="trap">Load the third-harmonic trap</button></div>
+        </div>
+      </details>
+      <div class="plots three"><div data-plot="loScope"></div><div data-plot="loSpec"></div><div data-plot="loXY"></div></div>
+    </div>
+  </section>
+
+  <section class="stage" id="s-mix">
+    <div class="rail"><div class="num">4</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{mixer.title}}</h2><span class="dom analog">analog</span></div>
+      <p>{{mixer.p1}}</p>
+      <div class="plots"><div data-plot="mixScope"></div><div data-plot="mixSpec"></div></div>
+      <p class="note">{{mixer.p2}}</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s-if">
+    <div class="rail"><div class="num">5</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{if-filter.title}}</h2><span class="dom analog">analog</span></div>
+      <p>{{if-filter.p1}}</p>
+      <div class="controls" data-controls="if"></div>
+      <div class="plots"><div data-plot="ifScope"></div><div data-plot="ifSpec"></div></div>
+    </div>
+  </section>
+
+  <section class="stage digital part2" id="s-adc">
+    <div class="rail"><div class="num">6</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{adc.title}}</h2><span class="dom part">optional</span><span class="dom analog">analog</span><span class="dom digital">→ digital</span></div>
+      <p>{{adc.p1}}</p>
+      <details class="adv sect" id="sec-adc">
+        <summary><span class="adv-t">{{adc-panel.title}}</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">{{adc-panel.summary}}</span></summary>
+        <div class="adv-body">
+          <p>{{adc-panel.p1}}</p>
+          <p>{{adc-panel.p2}}</p>
+          <div class="controls" data-controls="adc"></div>
+          <div class="plots"><div data-plot="adcScope"></div><div data-plot="adcSpec"></div></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="stage digital" id="s-iq">
+    <div class="rail"><div class="num">7</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{iq.title}}</h2><span class="dom digital">digital</span></div>
+      <p>{{iq.p1}}</p>
+      <div class="plots"><div data-plot="xyZ"></div><div data-plot="cxRawSpec"></div></div>
+    </div>
+  </section>
+
+  <section class="stage digital part2" id="s-iqfix">
+    <div class="rail"><div class="num">8</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{mismatch.title}}</h2><span class="dom part">optional</span><span class="dom analog">analog fault</span><span class="dom digital">digital fix</span></div>
+      <p>{{mismatch.p1}}</p>
+      <details class="adv sect" id="sec-iq">
+        <summary><span class="adv-t">{{mismatch-panel.title}}</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">{{mismatch-panel.summary}}</span></summary>
+        <div class="adv-body">
+          <p>{{mismatch-panel.p1}}</p>
+          <p>{{mismatch-panel.p2}}</p>
+
+          <div class="sub-block">
+            <h3>{{mismatch-panel.heading1}}</h3>
+            <p class="note">{{mismatch-panel.p3}}</p>
+            <div class="controls" data-controls="mix"></div>
+            <div><button class="btn" type="button" id="imbDemo">Load the mismatch demo</button></div>
+          </div>
+          <div class="plots"><div data-plot="xyRaw"></div><div data-plot="cxBefore"></div></div>
+
+          <div class="sub-block">
+            <h3>{{mismatch-panel.heading2}}</h3>
+            <p class="note">{{mismatch-panel.p4}}</p>
+            <div class="controls" data-controls="corr"></div>
+            <div class="stats-wrap">
+              <table class="stats">
+                <thead><tr><th>Quantity</th><th>Measured from signal</th><th>Injected fault</th><th>How it is estimated</th></tr></thead>
+                <tbody>
+                  <tr><th>DC offset I</th><td id="t-mI">–</td><td id="t-dcI">–</td><td class="f">mean(I)</td></tr>
+                  <tr><th>DC offset Q</th><td id="t-mQ">–</td><td id="t-dcQ">–</td><td class="f">mean(Q)</td></tr>
+                  <tr><th>σ<sub>I</sub>, σ<sub>Q</sub></th><td id="t-sd">–</td><td>–</td><td class="f">standard deviation after removing the mean</td></tr>
+                  <tr><th>Gain error</th><td id="t-g">–</td><td id="t-gs">–</td><td class="f">20·log₁₀(σ<sub>Q</sub>/σ<sub>I</sub>)</td></tr>
+                  <tr><th>Correlation ρ</th><td id="t-rho">–</td><td>–</td><td class="f">mean(I·Q) / (σ<sub>I</sub>σ<sub>Q</sub>)</td></tr>
+                  <tr><th>Phase error</th><td id="t-ph">–</td><td id="t-phs">–</td><td class="f">−asin(ρ)</td></tr>
+                  <tr><th>Image rejection</th><td id="t-irr">–</td><td id="t-irrs">–</td><td class="f">(1 + 2g cos φ + g²) / (1 − 2g cos φ + g²)</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="plots"><div data-plot="xyCorr"></div><div data-plot="cxAfter"></div></div>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="stage digital" id="s-dft">
+    <div class="rail"><div class="num">9</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{dft.title}}</h2><span class="dom digital">digital</span></div>
+      <p>{{dft.p1}}</p>
+      <div class="controls" data-controls="dft"></div>
+      <div class="meters">
+        <div class="smeter" role="img" aria-label="S-meter" id="smeter">
+          <div class="sm-scale" id="smScale"></div>
+          <div class="sm-track"><i id="smBar"></i><b id="smPeak"></b></div>
+          <div class="sm-foot"><span>S-units, 6 dB each</span><span>dB over S9</span></div>
+        </div>
+        <dl class="readouts">
+          <div><dt>{{dft.term1}}</dt><dd id="rdS">–</dd></div>
+          <div><dt>{{dft.term2}}</dt><dd id="rdDb">–</dd></div>
+          <div><dt>{{dft.term3}}</dt><dd id="rdSnr">–</dd></div>
+          <div><dt>{{dft.term4}}</dt><dd id="rdBw">–</dd></div>
+        </dl>
+      </div>
+      <p class="note">{{dft.p2}}</p>
+      <details class="adv" id="adv-rx">
+        <summary><span class="adv-t">{{single-mixer.title}}</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">{{single-mixer.summary}}</span></summary>
+        <div class="adv-body">
+          <p class="note">{{single-mixer.p1}}</p>
+          <div class="controls" data-controls="rx"></div>
+        </div>
+      </details>
+      <div class="plots three"><div data-plot="dftIn"></div><div data-plot="dftOut"></div><div data-plot="dftScope"></div></div>
+      <div class="plots wide"><div data-plot="dftWf"></div></div>
+    </div>
+  </section>
+
+  <section class="stage digital" id="s-out">
+    <div class="rail"><div class="num">10</div></div>
+    <div class="body">
+      <div class="shead"><h2>{{output.title}}</h2><span class="dom digital">digital</span></div>
+      <p>{{output.p1}}</p>
+      <dl class="dets">
+        <div><dt>{{output.term1}}</dt><dd>{{output.text1}}</dd></div>
+        <div><dt>{{output.term2}}</dt><dd>{{output.text2}}</dd></div>
+      </dl>
+      <details class="adv" id="adv-det">
+        <summary><span class="adv-t">{{more-detectors.title}}</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">{{more-detectors.summary}}</span></summary>
+        <div class="adv-body">
+          <dl class="dets">
+            <div><dt>{{more-detectors.term1}}</dt><dd>{{more-detectors.text1}}</dd></div>
+            <div><dt>{{more-detectors.term2}}</dt><dd>{{more-detectors.text2}}</dd></div>
+          </dl>
+          <div><button class="btn" type="button" data-preset="fm">Tune the NBFM station</button> <button class="btn" type="button" data-preset="sync">Load synchronous AM</button></div>
+        </div>
+      </details>
+      <div class="controls" data-controls="out"></div>
+      <p class="note mono" id="detInfo"></p>
+      <div class="plots"><div data-plot="outScope"></div><div data-plot="outSpec"></div></div>
+      <div class="plots wide"><div data-plot="outWf"></div></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>{{footer.p1}}</p>
+    <p>{{footer.p2}}</p>
+  </footer>
+</main>
+
+<script>
+'use strict';
+// ---------- constants ----------
+const FS = 32000, N = 1 << 17, DUR = N / FS, BIN = FS / N, TAU = 2 * Math.PI;
+const qf = f => Math.round(f / BIN) * BIN;
+const POS0 = 0.45;
+
+// ---------- FFT (radix-2, in place) ----------
+const fftCache = {};
+function fftTables(n) {
+  if (fftCache[n]) return fftCache[n];
+  const bits = Math.log2(n) | 0, rev = new Uint32Array(n);
+  for (let i = 0; i < n; i++) { let r = 0, x = i; for (let j = 0; j < bits; j++) { r = (r << 1) | (x & 1); x >>= 1; } rev[i] = r; }
+  // twiddles stored stage by stage: half-size h uses entries h-1 … 2h-2, read sequentially
+  const twr = new Float64Array(n), twi = new Float64Array(n);
+  for (let h = 1; h < n; h <<= 1) for (let j = 0; j < h; j++) { twr[h - 1 + j] = Math.cos(Math.PI * j / h); twi[h - 1 + j] = Math.sin(Math.PI * j / h); }
+  return (fftCache[n] = { rev, twr, twi });
+}
+function fft(re, im, inverse) {
+  const n = re.length, { rev, twr, twi } = fftTables(n);
+  for (let i = 0; i < n; i++) {
+    const j = rev[i];
+    if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  const sg = inverse ? 1 : -1;
+  for (let h = 1; h < n; h <<= 1) {
+    const o = h - 1;
+    for (let i = 0; i < n; i += h << 1) {
+      for (let j = 0; j < h; j++) {
+        const a = i + j, b = a + h, wr = twr[o + j], wi = sg * twi[o + j];
+        const xr = re[b], xi = im[b], tr = xr * wr - xi * wi, ti = xr * wi + xi * wr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+      }
+    }
+  }
+  if (inverse) { const k = 1 / n; for (let i = 0; i < n; i++) { re[i] *= k; im[i] *= k; } }
+}
+const freqOf = k => (k < N / 2 ? k : k - N) * BIN;
+
+// Whole-loop DFT of a + jb, cached by each stage so the next stage only needs one inverse DFT.
+function dftOf(a, b) {
+  const re = Float64Array.from(a), im = b ? Float64Array.from(b) : new Float64Array(N);
+  fft(re, im, false);
+  return { re, im };
+}
+// Zero-phase filter: multiply by a real, even H(|f|) and transform back. Returns [re, im] in time.
+function applyH(F, H) {
+  const { re, im } = applyHF(F, H);
+  fft(re, im, true);
+  return [re, im];
+}
+// The same, but stays in the frequency domain.
+function applyHF(F, H) {
+  const re = new Float64Array(N), im = new Float64Array(N);
+  for (let k = 0; k <= N / 2; k++) {
+    const g = H(k * BIN);
+    if (g < 1e-9) continue;
+    re[k] = F.re[k] * g; im[k] = F.im[k] * g;
+    if (k && k < N / 2) { const j = N - k; re[j] = F.re[j] * g; im[j] = F.im[j] * g; }
+  }
+  return { re, im };
+}
+function filterReal(x, H) {
+  const re = Float64Array.from(x), im = new Float64Array(N);
+  fft(re, im, false);
+  for (let k = 0; k < N; k++) { const g = H(Math.abs(freqOf(k))); re[k] *= g; im[k] *= g; }
+  fft(re, im, true);
+  return Float32Array.from(re);
+}
+function analytic(x) {
+  const re = Float64Array.from(x), im = new Float64Array(N);
+  fft(re, im, false);
+  for (let k = 1; k < N; k++) {
+    if (k < N / 2) { re[k] *= 2; im[k] *= 2; } else if (k > N / 2) { re[k] = 0; im[k] = 0; }
+  }
+  fft(re, im, true);
+  return { re, im };
+}
+
+// ---------- Welch spectra ----------
+const NF = 2048, SEGS = 32, HOP = Math.floor((N - NF) / (SEGS - 1));
+const WIN = new Float64Array(NF);
+let S1 = 0;
+for (let i = 0; i < NF; i++) { WIN[i] = 0.5 - 0.5 * Math.cos(TAU * i / NF); S1 += WIN[i]; }
+const wr = new Float64Array(NF), wi = new Float64Array(NF);
+function welch(re, im) {
+  const acc = new Float64Array(NF);
+  for (let s = 0; s < SEGS; s++) {
+    const o = s * HOP;
+    for (let i = 0; i < NF; i++) { wr[i] = re[o + i] * WIN[i]; wi[i] = im ? im[o + i] * WIN[i] : 0; }
+    fft(wr, wi, false);
+    for (let k = 0; k < NF; k++) acc[k] += wr[k] * wr[k] + wi[k] * wi[k];
+  }
+  for (let k = 0; k < NF; k++) acc[k] /= SEGS;
+  return acc;
+}
+function specReal(x) {
+  const a = welch(x, null), ref = (2 / S1) ** 2, out = new Float32Array(NF / 2 + 1);
+  for (let k = 0; k <= NF / 2; k++) out[k] = 10 * Math.log10(a[k] * ref + 1e-20);
+  return out;
+}
+function specCx(re, im) { // ordered from -FS/2 to +FS/2
+  const a = welch(re, im), ref = (1 / S1) ** 2, out = new Float32Array(NF);
+  for (let j = 0; j < NF; j++) out[j] = 10 * Math.log10(a[(j + NF / 2) % NF] * ref + 1e-20);
+  return out;
+}
+
+// ---------- station synthesis ----------
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gauss(r) { let u = 0; while (!u) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * r()); }
+const midi = m => 440 * Math.pow(2, (m - 69) / 12);
+const STEP = DUR / 16;
+
+// Notes wrap around the loop end, so every message repeats seamlessly.
+function addNote(buf, t0, dur, f, amp, harms, fmax, r) {
+  const ph = harms.map(() => r ? r() * TAU : 0);
+  const n0 = Math.round(t0 * FS), len = Math.round(dur * FS), att = Math.round(0.008 * FS), rel = Math.round(0.04 * FS);
+  for (let i = 0; i < len; i++) {
+    const t = i / FS;
+    let env = i < att ? i / att : Math.exp(-(i - att) / (len * 0.6));
+    if (i > len - rel) env *= (len - i) / rel;
+    let s = 0;
+    for (let h = 0; h < harms.length; h++) { const fh = f * (h + 1); if (fh > fmax) break; s += harms[h] * Math.sin(TAU * fh * t + ph[h]); }
+    buf[(n0 + i) % N] += amp * env * s;
+  }
+}
+const taper = (f, lo, hi, e = 40) => f < lo - e || f > hi + e ? 0 : f < lo ? 0.5 + 0.5 * Math.cos(Math.PI * (lo - f) / e) : f > hi ? 0.5 + 0.5 * Math.cos(Math.PI * (f - hi) / e) : 1;
+function normalise(x) { let p = 0; for (let i = 0; i < x.length; i++) p = Math.max(p, Math.abs(x[i])); for (let i = 0; i < x.length; i++) x[i] /= p || 1; return x; }
+
+const MORSE = {
+  A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--',
+  N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..',
+  0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-', 5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.'
+};
+// Keyed carrier: dit = 1 unit, dah = 3, gaps of 1 / 3 / 7 units; raised-cosine edges stop key clicks.
+function addMorse(buf, text, f, unit, t0, amp) {
+  const keys = [];
+  text.split(' ').forEach((word, w) => {
+    if (w) keys.push('0000');
+    [...word].forEach((ch, c) => {
+      if (c) keys.push('00');
+      keys.push(MORSE[ch].split('').map(e => e === '.' ? '1' : '111').join('0'));
+    });
+  });
+  const code = keys.join('0'), ramp = 0.005 * FS, w = TAU * f / FS;
+  for (let i = 0; i < code.length;) {
+    if (code[i] !== '1') { i++; continue; }
+    let j = i; while (code[j] === '1') j++;
+    const a0 = Math.round((t0 + i * unit) * FS), b0 = Math.round((t0 + j * unit) * FS);
+    for (let n = a0; n < b0; n++) {
+      const e = Math.min(1, (n - a0) / ramp, (b0 - n) / ramp);
+      buf[n % N] += amp * (0.5 - 0.5 * Math.cos(Math.PI * e)) * Math.cos(w * n);
+    }
+    i = j;
+  }
+}
+
+const ST = {};
+function buildStations() {
+  const r = mulberry32(20261024);
+  // USB programme: arpeggio
+  const m1 = new Float32Array(N);
+  [69, 72, 76, 81, 67, 71, 74, 79, 65, 69, 72, 77, 64, 68, 71, 76]
+    .forEach((m, i) => addNote(m1, i * STEP, STEP * 0.95, midi(m), 1, [1, .5, .3, .18, .1], 1550, r));
+  // LSB programme: bass line and hats
+  const m2 = new Float32Array(N);
+  [45, 45, 41, 41, 48, 48, 43, 43].forEach((m, i) => addNote(m2, i * STEP * 2 + 0.093, STEP * 1.8, midi(m), 1, [1, .85, .6, .5, .35, .25, .18, .12, .08], 1500, r));
+  for (let i = 0; i < 16; i++) {
+    const n0 = Math.round((i * STEP + STEP / 2) * FS);
+    for (let j = 0; j < 0.04 * FS; j++) m2[(n0 + j) % N] += 0.6 * gauss(r) * Math.exp(-j / (0.008 * FS));
+  }
+  // AM programme: nursery tune
+  const m3 = new Float32Array(N);
+  let t = 0;
+  for (const [m, d] of [[60, 1], [60, 1], [67, 1], [67, 1], [69, 1], [69, 1], [67, 2], [65, 1], [65, 1], [64, 1], [64, 1], [62, 1], [62, 1], [60, 2]]) {
+    addNote(m3, t * STEP, d * STEP * 0.92, midi(m), 1, [1, .55, .3, .18, .1], 1400, r); t += d;
+  }
+  const u = normalise(filterReal(m1, f => taper(f, 200, 1600)));
+  const l = normalise(filterReal(m2, f => taper(f, 80, 1550)));
+  const a = normalise(filterReal(m3, f => taper(f, 100, 1500)));
+
+  ST.am = new Float32Array(N);
+  for (let n = 0; n < N; n++) ST.am[n] = 0.2 * (1 + 0.8 * a[n]) * Math.cos(TAU * 3000 * n / FS);
+
+  // ISB: z = analytic(usb) + conj(analytic(lsb)), transmitted as Re{z e^{jωt}}
+  const a1 = analytic(u), a2 = analytic(l);
+  ST.isb = new Float32Array(N);
+  for (let n = 0; n < N; n++) {
+    const w = TAU * 7500 * n / FS;
+    ST.isb[n] = 0.14 * ((a1.re[n] + a2.re[n]) * Math.cos(w) - (a1.im[n] - a2.im[n]) * Math.sin(w));
+  }
+
+  // CW: a slow "SDR" beacon on 11.0 kHz, and G3ALI calling CQ 400 Hz above it at about 32 wpm
+  ST.cw = new Float32Array(N);
+  addMorse(ST.cw, 'SDR', 11000, 0.1, 0.4, 0.18);
+  addMorse(ST.cw, 'CQ DE G3ALI', 11400, DUR / 110, 0, 0.15);
+
+  // FSK: 62.5 baud, 15 kHz ± 250 Hz; integer cycles per bit keep it phase-continuous
+  ST.fsk = new Float32Array(N);
+  let ph = 0;
+  for (let b = 0; b < N / 512; b++) {
+    const f = r() < 0.5 ? 14750 : 15250;
+    for (let i = 0; i < 512; i++) { ST.fsk[b * 512 + i] = 0.25 * Math.cos(ph); ph += TAU * f / FS; }
+    ph %= TAU;
+  }
+
+  // NBFM at 12.75 kHz, ±400 Hz deviation, audio 100–800 Hz
+  const m4 = new Float32Array(N);
+  [72, 71, 69, 67, 65, 64, 62, 60, 60, 62, 64, 65, 67, 69, 71, 72]
+    .forEach((m, i) => addNote(m4, i * STEP, STEP * 0.9, midi(m), 1, [1, .25], 800, r));
+  const fmm = normalise(filterReal(m4, f => taper(f, 100, 800)));
+  ST.fm = new Float32Array(N);
+  let acc = 0;
+  for (let n = 0; n < N; n++) acc += fmm[n];
+  const drift = acc / N;  // tiny DC left over; removing it keeps the phase periodic over the loop
+  acc = 0;
+  for (let n = 0; n < N; n++) {
+    ST.fm[n] = 0.15 * Math.cos(TAU * 12750 * n / FS + TAU * 400 * acc / FS);
+    acc += fmm[n] - drift;
+  }
+
+  ST.noise = new Float32Array(N);
+  for (let n = 0; n < N; n++) ST.noise[n] = gauss(r);
+}
+
+// ---------- parameters ----------
+const P = {
+  noise: 0, stAM: true, stISB: true, stCW: true, stFM: true, stFSK: true,
+  ifOn: true, adcDiv: 1, rx: 'iq',
+  preOn: true, preC: 7500, preBW: 4000, preOrder: 4,
+  loF: 7500, loWave: 'sine',
+  gainErrDb: 0, phaseErrDeg: 0, dcI: 0, dcQ: 0,
+  ifCut: 1800, ifOrder: 6,
+  corr: false,
+  selC: 850, selW: 1500, shift: 0, demod: 're'
+};
+
+const kHz = v => (v / 1000).toFixed(2) + ' kHz';
+const sHz = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(Math.round(v)) + ' Hz';
+const FMT = {
+  khz: kHz, hz: v => Math.round(v) + ' Hz', shz: sHz,
+  lo: v => (qf(v) / 1000).toFixed(4) + ' kHz',
+  db: v => (v > 0 ? '+' : '') + (+v).toFixed(1) + ' dB',
+  deg: v => (v > 0 ? '+' : '') + (+v).toFixed(1) + '°',
+  amp: v => (+v).toFixed(3),
+  order: v => v + ' (' + v * 6 + ' dB/oct)'
+};
+
+const CONTROLS = {
+  noise: [{ k: 'noise', label: 'Noise level (σ)', min: 0, max: 0.3, step: 0.005, fmt: 'amp' }],
+  rf: [
+    { k: 'stAM', type: 'chk', label: 'AM 3 kHz' },
+    { k: 'stISB', type: 'chk', label: 'ISB 7.5 kHz' },
+    { k: 'stCW', type: 'chk', label: 'CW 11.0 / 11.4 kHz' },
+    { k: 'stFM', type: 'chk', label: 'FM 12.75 kHz' },
+    { k: 'stFSK', type: 'chk', label: 'FSK 15 kHz' }
+  ],
+  pre: [
+    { k: 'preOn', type: 'chk', label: 'Preselector in circuit' },
+    { k: 'preC', label: 'Centre', min: 100, max: 15900, step: 50, fmt: 'khz' },
+    { k: 'preBW', label: 'Bandwidth (−3 dB)', min: 200, max: 16000, step: 50, fmt: 'khz' },
+    { k: 'preOrder', label: 'Order', min: 1, max: 8, step: 1, fmt: 'order' }
+  ],
+  lo: [
+    { k: 'loF', label: 'LO frequency', min: 100, max: 15900, step: 5, fmt: 'lo' }
+  ],
+  lowave: [
+    { k: 'loWave', type: 'sel', label: 'LO waveform', opts: [['sine', 'Sine (ideal multiplier)'], ['square', 'Square (switching mixer)']] }
+  ],
+  mix: [
+    { k: 'gainErrDb', label: 'Q gain error', min: -3, max: 3, step: 0.1, fmt: 'db' },
+    { k: 'phaseErrDeg', label: 'Q phase error', min: -30, max: 30, step: 0.5, fmt: 'deg' },
+    { k: 'dcI', label: 'I DC offset', min: -0.05, max: 0.05, step: 0.001, fmt: 'amp' },
+    { k: 'dcQ', label: 'Q DC offset', min: -0.05, max: 0.05, step: 0.001, fmt: 'amp' }
+  ],
+  if: [
+    { k: 'ifCut', label: 'Cut-off (−3 dB)', min: 50, max: 8000, step: 10, fmt: 'hz' },
+    { k: 'ifOrder', label: 'Order', min: 1, max: 10, step: 1, fmt: 'order' }
+  ],
+  adc: [
+    { k: 'adcDiv', type: 'sel', num: true, label: 'Sample rate f<sub>s</sub>', opts: [[1, '32 kHz (±16 kHz)'], [2, '16 kHz (±8 kHz)'], [4, '8 kHz (±4 kHz)'], [8, '4 kHz (±2 kHz)'], [16, '2 kHz (±1 kHz)']] },
+    { k: 'ifOn', type: 'chk', label: 'IF filter in circuit (anti-alias)' }
+  ],
+  corr: [{ k: 'corr', type: 'chk', label: 'Apply DC, gain and phase correction' }],
+  rx: [{ k: 'rx', type: 'sel', label: 'Receiver', opts: [['iq', 'I + jQ (image-rejecting)'], ['real', 'Single mixer, I only']] }],
+  dft: [
+    { k: 'selC', label: 'Mask centre', min: -8000, max: 8000, step: 10, fmt: 'shz' },
+    { k: 'selW', label: 'Mask width', min: 20, max: 8000, step: 10, fmt: 'hz' },
+    { k: 'shift', label: 'Frequency shift', min: -4000, max: 4000, step: 10, fmt: 'shz' }
+  ],
+  out: [
+    { k: 'demod', type: 'sel', label: 'Detector', opts: [['re', 'Product, Re{z}  (SSB, CW, FSK)'], ['abs', 'Envelope, |z|  (AM)'], ['sync', 'Synchronous AM (PLL)'], ['fm', 'FM discriminator']] }
+  ]
+};
+// Which pipeline stage each parameter invalidates
+const ORDER = ['rf', 'pre', 'lo', 'mix', 'if', 'adc', 'corr', 'dft', 'out'];
+const KEY_STAGE = {
+  noise: 'rf', stAM: 'rf', stISB: 'rf', stCW: 'rf', stFM: 'rf', stFSK: 'rf', ifOn: 'if', adcDiv: 'adc', rx: 'dft',
+  preOn: 'pre', preC: 'pre', preBW: 'pre', preOrder: 'pre',
+  loF: 'lo', loWave: 'lo', gainErrDb: 'lo', phaseErrDeg: 'lo', dcI: 'mix', dcQ: 'mix',
+  ifCut: 'if', ifOrder: 'if', corr: 'corr', selC: 'dft', selW: 'dft', shift: 'dft', demod: 'out'
+};
+const FMT_OF = {};
+
+const BASE = { ifOn: true, adcDiv: 1, rx: 'iq', preOn: true, preOrder: 4, loWave: 'sine', gainErrDb: 0, phaseErrDeg: 0, dcI: 0, dcQ: 0, ifOrder: 6, corr: false, shift: 0, demod: 're' };
+const PRESETS = [
+  { id: 'am', name: {{js:preset.am.name}}, f: '3.000 kHz · AM', title: {{js:preset.am.title}},
+    desc: {{js:preset.am.desc}},
+    p: { preC: 3000, preBW: 4000, loF: 3000, ifCut: 1800, selC: 0, selW: 3400, demod: 'abs' } },
+  { id: 'isbU', name: {{js:preset.isbU.name}}, f: '7.500 kHz · ISB upper', title: {{js:preset.isbU.title}},
+    desc: {{js:preset.isbU.desc}},
+    p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500 } },
+  { id: 'isbL', name: {{js:preset.isbL.name}}, f: '7.500 kHz · ISB lower', title: {{js:preset.isbL.title}},
+    desc: {{js:preset.isbL.desc}},
+    p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: -850, selW: 1500 } },
+  { id: 'cq', name: {{js:preset.cq.name}}, f: '11.400 kHz · CW', title: {{js:preset.cq.title}},
+    desc: {{js:preset.cq.desc}},
+    p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 1100, selW: 150, shift: -400 } },
+  { id: 'cw', name: {{js:preset.cw.name}}, f: '11.000 kHz · CW', title: {{js:preset.cw.title}},
+    desc: {{js:preset.cw.desc}},
+    p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 700, selW: 150 } },
+  { id: 'fm', opens: 'adv-det', name: {{js:preset.fm.name}}, f: '12.750 kHz · FM', title: {{js:preset.fm.title}},
+    desc: {{js:preset.fm.desc}},
+    p: { preC: 12750, preBW: 3000, loF: 12750, ifCut: 1500, selC: 0, selW: 2600, demod: 'fm', adcDiv: 4 } },
+  { id: 'sync', exp: true, opens: 'adv-det', name: {{js:preset.sync.name}}, f: 'Section 10 · detectors', title: {{js:preset.sync.title}},
+    desc: {{js:preset.sync.desc}},
+    p: { preC: 3000, preBW: 4000, loF: 2950, ifCut: 1800, selC: 800, selW: 1700, demod: 'sync', adcDiv: 4 } },
+  { id: 'fsk', name: {{js:preset.fsk.name}}, f: '15.000 kHz · FSK', title: {{js:preset.fsk.title}},
+    desc: {{js:preset.fsk.desc}},
+    p: { preC: 15000, preBW: 1500, loF: 15000, ifCut: 600, selC: 0, selW: 800, shift: 1200 } },
+  { id: 'lowif', exp: true, name: {{js:preset.lowif.name}}, f: 'Section 9 · shift', title: {{js:preset.lowif.title}},
+    desc: {{js:preset.lowif.desc}},
+    p: { preC: 7500, preBW: 4000, loF: 7000, ifCut: 2400, selC: 1300, selW: 1500, shift: -500 } },
+  { id: 'trap', exp: true, opens: 'adv-lo', name: {{js:preset.trap.name}}, f: 'Section 3 · LO harmonics', title: {{js:preset.trap.title}},
+    desc: {{js:preset.trap.desc}},
+    p: { preC: 8000, preBW: 16000, loF: 5000, loWave: 'square', ifCut: 800, selC: 0, selW: 1000, shift: 1200 } },
+  { id: 'alias', exp: true, opens: 'sec-adc', name: {{js:preset.alias.name}}, f: 'Section 6 · sampling', title: {{js:preset.alias.title}},
+    desc: {{js:preset.alias.desc}},
+    p: { preC: 8000, preBW: 16000, loF: 7500, ifCut: 1800, ifOn: false, adcDiv: 8, selC: 850, selW: 1500 } },
+  { id: 'real', exp: true, opens: 'adv-rx', name: {{js:preset.real.name}}, f: 'Section 9 · receiver', title: {{js:preset.real.title}},
+    desc: {{js:preset.real.desc}},
+    p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, rx: 'real' } },
+  { id: 'imb', exp: true, opens: 'sec-iq', name: {{js:preset.imb.name}}, f: 'Section 8 · IQ mismatch', title: {{js:preset.imb.title}},
+    desc: {{js:preset.imb.desc}},
+    p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, gainErrDb: 1.5, phaseErrDeg: 8, dcI: 0.01, dcQ: -0.008 } }
+];
+
+// ---------- pipeline ----------
+const S = {}, SP = {}, EST = {}, DET = { text: '' }, MET = {};
+const Hpre = f => { if (!P.preOn) return 1; const x = (f - P.preC) / (P.preBW / 2); return 1 / Math.sqrt(1 + Math.pow(x * x, P.preOrder)); };
+const Hif = f => !P.ifOn ? 1 : 1 / Math.sqrt(1 + Math.pow((f / P.ifCut) ** 2, P.ifOrder));
+const maskMirror = f => Math.max(maskG(f), maskG(-f));
+const maskG = f => {
+  const e = Math.min(40, P.selW / 4), a = Math.abs(f - P.selC), lo = P.selW / 2 - e / 2;
+  return a <= lo ? 1 : a >= lo + e ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * (a - lo) / e);
+};
+
+// Expected |Z[k]|² per unit of antenna noise power, for z = I + jQ (S.nGz) and for I alone (S.nGI).
+// White noise through preselector, LO (every harmonic of a square LO), IF filter and ADC folding.
+// Assumes a balanced mixer: the small effect of the stage-2 faults on noise is ignored.
+function noiseGain(D) {
+  const f = qf(P.loF), hs = [];
+  for (let h = 1; h <= (P.loWave === 'square' ? 31 : 1) && h * f < FS / 2; h += 2) hs.push(h);
+  const alias = x => { x = ((x % FS) + FS) % FS; return x > FS / 2 ? FS - x : x; };
+  const H2 = x => Hpre(alias(x)) ** 2;
+  const Gz = new Float64Array(N), GI = new Float64Array(N);
+  for (let k = 0; k < N; k++) {
+    const fk = freqOf(k), hif = Hif(Math.abs(fk)) ** 2;
+    if (hif < 1e-12) continue;
+    let gz = 0, gi = 0;
+    for (const h of hs) {
+      const w = P.loWave === 'square' ? (4 / (Math.PI * h)) ** 2 : 1, dir = ((h - 1) / 2) % 2 ? -1 : 1;
+      gz += w * H2(fk + dir * h * f);
+      gi += w / 4 * (H2(fk + h * f) + H2(fk - h * f));
+    }
+    Gz[k] = gz * hif; GI[k] = gi * hif;
+  }
+  const fold = G => {
+    if (D === 1) return G;
+    const M = N / D, out = new Float64Array(N);
+    for (let k = -M / 2; k < M / 2; k++) { let s = 0; for (let m = 0; m < D; m++) s += G[(k + m * M) & (N - 1)]; out[k & (N - 1)] = s; }
+    return out;
+  };
+  S.nGz = fold(Gz); S.nGI = fold(GI);
+}
+
+const COMPUTE = {
+  rf() {
+    const x = new Float32Array(N);
+    for (let n = 0; n < N; n++) {
+      x[n] = (P.stAM ? ST.am[n] : 0) + (P.stISB ? ST.isb[n] : 0) + (P.stCW ? ST.cw[n] : 0) + (P.stFM ? ST.fm[n] : 0) + (P.stFSK ? ST.fsk[n] : 0) + P.noise * ST.noise[n];
+    }
+    S.rf = x; S.rfF = dftOf(x); SP.rf = specReal(x);
+  },
+  pre() { S.pre = P.preOn ? Float32Array.from(applyH(S.rfF, Hpre)[0]) : S.rf; SP.pre = specReal(S.pre); },
+  lo() {
+    const f = qf(P.loF), g = Math.pow(10, P.gainErrDb / 20), phi = P.phaseErrDeg * Math.PI / 180;
+    const I = new Float32Array(N), Q = new Float32Array(N), w = TAU * f / FS;
+    if (P.loWave === 'sine') {
+      for (let n = 0; n < N; n++) { I[n] = Math.cos(w * n); Q[n] = -g * Math.sin(w * n + phi); }
+    } else {
+      // band-limited square: odd harmonics below Nyquist; a delayed Q edge shifts harmonic h by h·φ
+      const hs = []; for (let h = 1; h * f < FS / 2 && h <= 31; h += 2) hs.push(h);
+      for (let n = 0; n < N; n++) {
+        let a = 0, b = 0;
+        for (const h of hs) { const sgn = ((h - 1) / 2) % 2 ? -1 : 1; a += sgn * Math.cos(h * w * n) / h; b += Math.sin(h * (w * n + phi)) / h; }
+        I[n] = 4 / Math.PI * a; Q[n] = -g * 4 / Math.PI * b;
+      }
+    }
+    S.loI = I; S.loQ = Q; SP.loI = specReal(I); SP.loQ = specReal(Q);
+  },
+  mix() {
+    const I = new Float32Array(N), Q = new Float32Array(N), x = S.pre;
+    for (let n = 0; n < N; n++) { I[n] = x[n] * S.loI[n] + P.dcI; Q[n] = x[n] * S.loQ[n] + P.dcQ; }
+    S.mixI = I; S.mixQ = Q; S.mixF = dftOf(I, Q); SP.mixI = specReal(I); SP.mixQ = specReal(Q);
+  },
+  if() {
+    S.ifF = applyHF(S.mixF, Hif);  // filtering I + jQ with a real, even H filters I and Q alike
+    const re = Float64Array.from(S.ifF.re), im = Float64Array.from(S.ifF.im);
+    fft(re, im, true);
+    S.ifI = Float32Array.from(re); S.ifQ = Float32Array.from(im);
+    SP.ifI = specReal(S.ifI); SP.ifQ = specReal(S.ifQ); SP.ifCx = specCx(S.ifI, S.ifQ);
+  },
+  adc() {
+    // Sampling every D-th value and reconstructing ideally is the same as folding every
+    // alias k + m·N/D onto bin k and keeping only |f| < fs/2.
+    const D = P.adcDiv;
+    noiseGain(D);
+    if (D === 1) { S.adI = S.ifI; S.adQ = S.ifQ; SP.adc = SP.ifCx; return; }
+    const M = N / D, re = new Float64Array(N), im = new Float64Array(N), F = S.ifF;
+    for (let k = -M / 2; k < M / 2; k++) {
+      let sr = 0, si = 0;
+      for (let m = 0; m < D; m++) { const j = (k + m * M) & (N - 1); sr += F.re[j]; si += F.im[j]; }
+      re[k & (N - 1)] = sr; im[k & (N - 1)] = si;
+    }
+    fft(re, im, true);
+    S.adI = Float32Array.from(re); S.adQ = Float32Array.from(im);
+    SP.adc = specCx(S.adI, S.adQ);
+  },
+  corr() {
+    const I = S.adI, Q = S.adQ;
+    let sI = 0, sQ = 0;
+    for (let n = 0; n < N; n++) { sI += I[n]; sQ += Q[n]; }
+    const mI = sI / N, mQ = sQ / N;
+    let pI = 0, pQ = 0, c = 0;
+    for (let n = 0; n < N; n++) { const a = I[n] - mI, b = Q[n] - mQ; pI += a * a; pQ += b * b; c += a * b; }
+    pI /= N; pQ /= N; c /= N;
+    const g = pI > 1e-20 ? Math.sqrt(pQ / pI) : 1;
+    const s = pI > 1e-20 && pQ > 1e-20 ? Math.max(-0.999, Math.min(0.999, c / Math.sqrt(pI * pQ))) : 0;
+    const co = Math.sqrt(1 - s * s);
+    Object.assign(EST, { mI, mQ, sdI: Math.sqrt(pI), sdQ: Math.sqrt(pQ), g, s, gDb: 20 * Math.log10(g), phDeg: -Math.asin(s) * 180 / Math.PI });
+    if (P.corr) {
+      const Ic = new Float32Array(N), Qc = new Float32Array(N);
+      for (let n = 0; n < N; n++) { const a = I[n] - mI, b = Q[n] - mQ; Ic[n] = a; Qc[n] = (b / g - a * s) / co; }
+      S.Ic = Ic; S.Qc = Qc;
+    } else { S.Ic = I; S.Qc = Q; }
+    S.zF = dftOf(S.Ic, S.Qc);
+    S.iF = null; SP.cxI = null;
+    SP.cxRaw = SP.adc;
+    SP.cxCorr = P.corr ? specCx(S.Ic, S.Qc) : SP.cxRaw;
+  },
+  dft() {
+    // A single-mixer receiver only has I: a real signal, so the mask is mirrored and no shift is possible.
+    const real = P.rx === 'real';
+    if (real && !S.iF) { S.iF = dftOf(S.Ic); SP.cxI = specCx(S.Ic, new Float32Array(N)); }
+    const { re, im } = real ? S.iF : S.zF, ks = real ? 0 : Math.round(P.shift / BIN), mask = real ? maskMirror : maskG;
+    const or = new Float64Array(N), oi = new Float64Array(N), G = real ? S.nGI : S.nGz;
+    let nAcc = 0, bw = 0;
+    for (let k = 0; k < N; k++) {
+      const g = mask(freqOf(k));
+      if (g > 0) { const j = (k + ks) & (N - 1); or[j] = re[k] * g; oi[j] = im[k] * g; nAcc += G[k] * g * g; bw += g * g; }
+    }
+    fft(or, oi, true);
+    S.zr = Float32Array.from(or); S.zi = Float32Array.from(oi);
+    SP.dft = specCx(S.zr, S.zi);
+    // What the S-meter and SNR readout see: power inside the mask, and the part of it that is noise.
+    let pt = 0;
+    const frames = new Float32Array(N / 512);
+    for (let f = 0; f < frames.length; f++) {
+      let a = 0;
+      for (let n = f * 512; n < (f + 1) * 512; n++) a += or[n] * or[n] + oi[n] * oi[n];
+      pt += a; frames[f] = 10 * Math.log10(a / 512 + 1e-20);
+    }
+    Object.assign(MET, { p: pt / N, pn: P.noise * P.noise * nAcc / N, bw: bw * BIN * (real ? 0.5 : 1), frames });
+  },
+  out() {
+    const zr = S.zr, zi = S.zi, y = new Float32Array(N);
+    DET.text = '';
+    if (P.demod === 'abs') {
+      for (let n = 0; n < N; n++) y[n] = Math.hypot(zr[n], zi[n]);
+    } else if (P.demod === 'fm') {
+      // phase step between samples = instantaneous frequency
+      for (let n = 0; n < N; n++) {
+        const p = (n + N - 1) % N, a = zr[n] * zr[p] + zi[n] * zi[p], b = zi[n] * zr[p] - zr[n] * zi[p];
+        y[n] = Math.atan2(b, a) * FS / TAU;
+      }
+      let m = 0; for (let n = 0; n < N; n++) m += y[n];
+      DET.text = `FM discriminator: mean frequency ${sHz(m / N)} (a tuning error shows up as DC, removed before the speaker)`;
+    } else if (P.demod === 'sync') {
+      // Second-order PLL, ~25 Hz loop bandwidth, seeded with the average phase step. Two passes round the loop.
+      const wn = TAU * 25 / FS, kp = 2 * 0.707 * wn, ki = wn * wn;
+      let fr = 0, ph = 0, a = 0, b = 0;
+      for (let n = 0; n < N; n++) { const p = (n + N - 1) % N; a += zr[n] * zr[p] + zi[n] * zi[p]; b += zi[n] * zr[p] - zr[n] * zi[p]; }
+      fr = Math.atan2(b, a);
+      for (let pass = 0; pass < 2; pass++) {
+        for (let n = 0; n < N; n++) {
+          const c = Math.cos(ph), s = Math.sin(ph), re = zr[n] * c + zi[n] * s, im = zi[n] * c - zr[n] * s;
+          if (pass) y[n] = re;
+          const e = Math.atan2(im, re);
+          fr += ki * e; ph += fr + kp * e;
+          if (ph > Math.PI) ph -= TAU; else if (ph < -Math.PI) ph += TAU;
+        }
+      }
+      DET.text = `PLL locked to the carrier at ${sHz(fr * FS / TAU)} in z (after the shift)`;
+    } else y.set(zr);
+    if (P.demod !== 're') { let m = 0; for (let n = 0; n < N; n++) m += y[n]; m /= N; for (let n = 0; n < N; n++) y[n] -= m; }
+    if (P.rx === 'real') DET.text = (DET.text ? DET.text + ' · ' : '') + 'Single-mixer receiver: mask mirrored, shift ignored';
+    S.out = y;
+    SP.out = specReal(S.out);
+  }
+};
+
+const DEPS = { rf: [], pre: ['rf'], lo: [], mix: ['pre', 'lo'], if: ['mix'], adc: ['if'], corr: ['adc'], dft: ['corr'], out: ['dft'] };
+const dirty = new Set(ORDER);
+let pending = false;
+function markDirty(st) { dirty.add(st); }
+function schedule() { if (!pending) { pending = true; requestAnimationFrame(run); } }
+function run() {
+  pending = false;
+  if (!dirty.size || !ST.noise) return;
+  const done = new Set();
+  for (const st of ORDER) if (dirty.has(st) || DEPS[st].some(d => done.has(d))) { COMPUTE[st](); done.add(st); }
+  dirty.clear();
+  markWF(done); scheduleWF();
+  drawAll(); updateStats();
+  if (cur && done.has(PLAY[cur.id].stage)) requestAudioRefresh();
+}
+
+// ---------- controls ----------
+function setParam(key, val, fromInput) {
+  P[key] = val;
+  const el = document.getElementById(key);
+  if (el && !fromInput && el.type !== 'checkbox') el.value = val;
+  for (const cb of document.querySelectorAll(`input[type=checkbox][data-key="${key}"]`)) cb.checked = !!val;
+  const o = document.getElementById('o-' + key);
+  if (o && FMT_OF[key]) o.textContent = FMT[FMT_OF[key]](val);
+  markDirty(KEY_STAGE[key]); schedule();
+}
+function buildControls() {
+  for (const box of document.querySelectorAll('[data-controls]')) {
+    for (const c of CONTROLS[box.dataset.controls] || []) {
+      if (c.type === 'chk') {
+        const l = document.createElement('label'); l.className = 'chk'; l.htmlFor = c.id || c.k;
+        l.innerHTML = `<input type="checkbox" id="${c.id || c.k}" data-key="${c.k}"> ${c.label}`;
+        const inp = l.querySelector('input'); inp.checked = !!P[c.k];
+        inp.addEventListener('change', () => setParam(c.k, inp.checked, true));
+        box.append(l);
+      } else if (c.type === 'sel') {
+        const l = document.createElement('label'); l.className = 'ctl'; l.htmlFor = c.k;
+        l.innerHTML = `<span class="lab">${c.label}</span><span></span><select id="${c.k}">${c.opts.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
+        const inp = l.querySelector('select'); inp.value = P[c.k];
+        inp.addEventListener('change', () => setParam(c.k, c.num ? +inp.value : inp.value, true));
+        box.append(l);
+      } else {
+        FMT_OF[c.k] = c.fmt;
+        const l = document.createElement('label'); l.className = 'ctl'; l.htmlFor = c.k;
+        l.innerHTML = `<span class="lab">${c.label}</span><output id="o-${c.k}">${FMT[c.fmt](P[c.k])}</output><input type="range" id="${c.k}" min="${c.min}" max="${c.max}" step="${c.step}">`;
+        const inp = l.querySelector('input'); inp.value = P[c.k];
+        inp.addEventListener('input', () => setParam(c.k, +inp.value, true));
+        box.append(l);
+      }
+    }
+  }
+}
+function applyPreset(id) {
+  const pr = PRESETS.find(p => p.id === id); if (!pr) return;
+  const vals = Object.assign({}, BASE, pr.p);
+  for (const k in vals) setParam(k, vals[k]);
+  document.getElementById('preset').value = id;
+  if (pr.opens) document.getElementById(pr.opens).open = true;
+  return pr;
+}
+// A panel is flagged when any of its settings is away from the ideal receiver.
+const NOT_IDEAL = {
+  'adv-noise': () => P.noise > 0,
+  'adv-lo': () => P.loWave !== 'sine',
+  'sec-adc': () => P.adcDiv !== 1 || !P.ifOn,
+  'sec-iq': () => !!(P.gainErrDb || P.phaseErrDeg || P.dcI || P.dcQ),
+  'adv-rx': () => P.rx !== 'iq',
+  'adv-det': () => P.demod === 'sync' || P.demod === 'fm'
+};
+function updateBadges() {
+  for (const id in NOT_IDEAL) document.querySelector('#' + id + ' > summary .adv-badge').hidden = !NOT_IDEAL[id]();
+}
+
+// ---------- audio ----------
+let ctx = null, master = null, cur = null, refreshTimer = null, lastRefresh = 0;
+const PLAY = {
+  rf: { name: 'Antenna', stage: 'rf', get: () => [S.rf] },
+  pre: { name: 'Preselector output', stage: 'pre', get: () => [S.pre] },
+  loI: { name: 'LO I (cos)', stage: 'lo', get: () => [S.loI] },
+  loQ: { name: 'LO Q (−sin)', stage: 'lo', get: () => [S.loQ] },
+  loIQ: { name: 'LO, I left / Q right', stage: 'lo', get: () => [S.loI, S.loQ] },
+  mixI: { name: 'Mixer I', stage: 'mix', get: () => [S.mixI] },
+  mixQ: { name: 'Mixer Q', stage: 'mix', get: () => [S.mixQ] },
+  mixIQ: { name: 'Mixer, I left / Q right', stage: 'mix', get: () => [S.mixI, S.mixQ] },
+  ifI: { name: 'IF filter I', stage: 'if', get: () => [S.ifI] },
+  ifQ: { name: 'IF filter Q', stage: 'if', get: () => [S.ifQ] },
+  ifIQ: { name: 'IF filter, I left / Q right', stage: 'if', get: () => [S.ifI, S.ifQ] },
+  adcIQ: { name: 'Sampled I/Q, I left / Q right', stage: 'adc', get: () => [S.adI, S.adQ] },
+  corrIQ: { name: 'I + jQ after correction, I left / Q right', stage: 'corr', get: () => [S.Ic, S.Qc] },
+  dftIQ: { name: 'Masked and shifted z, Re left / Im right', stage: 'dft', get: () => [S.zr, S.zi] },
+  out: { name: 'Receiver output', stage: 'out', get: () => [S.out] }
+};
+function ensureCtx() {
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = +document.getElementById('vol').value; master.connect(ctx.destination);
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+}
+function makeBuffer(chs) {
+  let p = 0;
+  for (const c of chs) for (let i = 0; i < N; i++) { const a = Math.abs(c[i]); if (a > p) p = a; }
+  const k = p > 1e-9 ? Math.min(0.85 / p, 400) : 0;
+  const buf = ctx.createBuffer(chs.length, N, FS);
+  chs.forEach((c, ch) => { const d = buf.getChannelData(ch); for (let i = 0; i < N; i++) d[i] = c[i] * k; });
+  return buf;
+}
+const playPos = () => cur ? (((ctx.currentTime - cur.t0) % DUR) + DUR) % DUR : POS0;
+function startSource(id, pos) {
+  const src = ctx.createBufferSource(); src.buffer = makeBuffer(PLAY[id].get()); src.loop = true;
+  const g = ctx.createGain(), now = ctx.currentTime;
+  g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(1, now + 0.03);
+  src.connect(g); g.connect(master); src.start(now, pos);
+  return { id, src, g, t0: now - pos };
+}
+function fadeOut(c) {
+  const now = ctx.currentTime;
+  c.g.gain.cancelScheduledValues(now); c.g.gain.setValueAtTime(c.g.gain.value, now); c.g.gain.linearRampToValueAtTime(0, now + 0.03);
+  c.src.stop(now + 0.05);
+}
+function togglePlay(id) {
+  if (!S.out) return;
+  ensureCtx();
+  if (cur && cur.id === id) { stopPlay(); return; }
+  const pos = cur ? playPos() : 0;
+  if (cur) fadeOut(cur);
+  cur = startSource(id, pos);
+  updateButtons(); startAnim();
+}
+function stopPlay() {
+  if (cur) { fadeOut(cur); cur = null; }
+  updateButtons(); drawLive(); updateMeterBar();
+  document.getElementById('prog').style.width = '0';
+}
+function refreshAudio() {
+  if (!cur) return;
+  const pos = playPos(), id = cur.id;
+  fadeOut(cur); cur = startSource(id, pos);
+}
+function requestAudioRefresh() {
+  if (refreshTimer) return;
+  const wait = Math.max(0, 120 - (performance.now() - lastRefresh));
+  refreshTimer = setTimeout(() => { refreshTimer = null; lastRefresh = performance.now(); refreshAudio(); }, wait);
+}
+function updateButtons() {
+  for (const b of document.querySelectorAll('[data-play]')) {
+    const on = !!cur && cur.id === b.dataset.play;
+    b.setAttribute('aria-pressed', on);
+    b.textContent = (on ? '■ ' : '▶ ') + b.dataset.label;
+  }
+  document.getElementById('np').innerHTML = cur ? `Playing <b>${PLAY[cur.id].name}</b>` : 'Nothing playing. Headphones recommended.';
+}
+
+// ---------- plotting ----------
+const C = {};
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const n of ['screen', 'screen-ink', 'grid', 'grid-strong', 'gridtxt', 'trI', 'trQ', 'trZ', 'trF', 'ghost']) C[n] = cs.getPropertyValue('--' + n).trim();
+  buildLUT();
+  for (const id in WF) renderWF(WF[id]);
+}
+const peakCache = new WeakMap();
+function peakOf(d) {
+  let p = peakCache.get(d); if (p !== undefined) return p;
+  p = 0; for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > p) p = a; }
+  peakCache.set(d, p); return p;
+}
+function niceCeil(v) {
+  if (!(v > 0)) return 1;
+  const e = Math.pow(10, Math.floor(Math.log10(v))), m = v / e;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * e;
+}
+const fmtAmp = v => v >= 1 ? v.toFixed(0) : v >= 0.01 ? +v.toFixed(3) + '' : v.toExponential(0);
+function setupCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { c, W: r.width, H: r.height };
+}
+const FONT = '10.5px "IBM Plex Mono", ui-monospace, monospace';
+
+const SPANS = {
+  scope: [0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.5, DUR],
+  real: [16000, 8000, 4000, 2000],
+  complex: [16000, 8000, 4000, 2000, 1000],
+  xy: [0.002, 0.01, 0.05, 0.2]
+};
+const spanLabel = (type, v) => type === 'scope' || type === 'xy' ? (v === DUR ? 'whole loop' : Math.round(v * 1e4) / 10 + ' ms') :
+  type === 'real' ? '0–' + v / 1000 + ' kHz' : '±' + v / 1000 + ' kHz';
+const loMarker = () => [{ f: qf(P.loF), col: 'trZ', label: 'LO' }];
+
+const PLOTS = {
+  rfScope: { type: 'scope', title: 'Waveform', span: 0.005, traces: () => [{ d: S.rf, col: 'trI', name: 'rf' }], plays: [['rf', 'Play', 'trI']] },
+  rfSpec: { type: 'spec', mode: 'real', title: 'Spectrum · drag to tune', span: 16000, layers: () => [{ d: SP.rf, col: 'trI' }], markers: loMarker,
+    drag: f => { const v = Math.round(Math.min(15900, Math.max(100, f)) / 50) * 50; setParam('loF', v); setParam('preC', v); } },
+  rfWf: { type: 'wf', src: 'rf', mode: 'real', title: 'Waterfall · newest at top · drag to tune', span: 16000, lines: loMarker,
+    drag: f => { const v = Math.round(Math.min(15900, Math.max(100, f)) / 50) * 50; setParam('loF', v); setParam('preC', v); } },
+  preScope: { type: 'scope', title: 'Waveform', span: 0.005, traces: () => [{ d: S.pre, col: 'trI', name: 'preselected' }], plays: [['pre', 'Play', 'trI']] },
+  preSpec: { type: 'spec', mode: 'real', title: 'Spectrum · drag to move filter', span: 16000, layers: () => [{ d: SP.rf, ghost: true }, { d: SP.pre, col: 'trI' }],
+    overlays: () => P.preOn ? [{ fn: Hpre, col: 'trF' }] : [], markers: loMarker,
+    drag: f => setParam('preC', Math.round(Math.min(15900, Math.max(100, f)) / 50) * 50) },
+  loScope: { type: 'scope', title: 'Waveform', span: 0.001, traces: () => [{ d: S.loI, col: 'trI', name: 'I = cos' }, { d: S.loQ, col: 'trQ', name: 'Q = −sin' }],
+    plays: [['loI', 'I', 'trI'], ['loQ', 'Q', 'trQ'], ['loIQ', 'I/Q', 'screen-ink']] },
+  loSpec: { type: 'spec', mode: 'real', title: 'Spectrum', span: 16000, layers: () => [{ d: SP.loQ, col: 'trQ', line: true }, { d: SP.loI, col: 'trI' }] },
+  loXY: { type: 'xy', title: 'X–Y: I across, Q up', span: 0.002, i: () => S.loI, q: () => S.loQ },
+  mixScope: { type: 'scope', title: 'Waveform', span: 0.005, traces: () => [{ d: S.mixI, col: 'trI', name: 'I' }, { d: S.mixQ, col: 'trQ', name: 'Q' }],
+    plays: [['mixI', 'I', 'trI'], ['mixQ', 'Q', 'trQ'], ['mixIQ', 'I/Q', 'screen-ink']] },
+  mixSpec: { type: 'spec', mode: 'real', title: 'Spectrum', span: 16000, layers: () => [{ d: SP.pre, ghost: true }, { d: SP.mixQ, col: 'trQ', line: true }, { d: SP.mixI, col: 'trI' }], markers: loMarker },
+  ifScope: { type: 'scope', title: 'Waveform', span: 0.02, traces: () => [{ d: S.ifI, col: 'trI', name: 'I' }, { d: S.ifQ, col: 'trQ', name: 'Q' }],
+    plays: [['ifI', 'I', 'trI'], ['ifQ', 'Q', 'trQ'], ['ifIQ', 'I/Q', 'screen-ink']] },
+  ifSpec: { type: 'spec', mode: 'real', title: 'Spectrum · drag to set cut-off', span: 4000, layers: () => [{ d: SP.mixI, ghost: true }, { d: SP.ifQ, col: 'trQ', line: true }, { d: SP.ifI, col: 'trI' }],
+    overlays: () => [{ fn: Hif, col: 'trF' }], drag: f => setParam('ifCut', Math.round(Math.min(8000, Math.max(50, f)) / 10) * 10) },
+  adcScope: { type: 'scope', title: 'Waveform · dots are samples', span: 0.005,
+    traces: () => [{ d: S.adI, col: 'trI', name: 'I', step: P.adcDiv }, { d: S.adQ, col: 'trQ', name: 'Q', step: P.adcDiv }], plays: [['adcIQ', 'I/Q', 'screen-ink']] },
+  adcSpec: { type: 'spec', mode: 'complex', title: 'Sampled I + jQ (grey: before)', span: 16000,
+    layers: () => [{ d: SP.ifCx, ghost: true }, { d: SP.adc, col: 'trZ' }], overlays: () => [{ fn: f => Math.abs(f) < FS / 2 / P.adcDiv ? 1 : 0, col: 'trF' }] },
+  xyZ: { type: 'xy', title: 'X–Y: z in the complex plane', span: 0.05, i: () => S.adI, q: () => S.adQ, plays: [['adcIQ', 'I/Q', 'screen-ink']] },
+  cxRawSpec: { type: 'spec', mode: 'complex', title: 'Spectrum of I + jQ', span: 4000, layers: () => [{ d: SP.cxRaw, col: 'trZ' }] },
+  xyRaw: { type: 'xy', title: 'X–Y with the fault', span: 0.05, i: () => S.adI, q: () => S.adQ, plays: [['adcIQ', 'I/Q', 'screen-ink']] },
+  cxBefore: { type: 'spec', mode: 'complex', title: 'Spectrum with the fault', span: 4000, layers: () => [{ d: SP.cxRaw, col: 'trZ' }] },
+  xyCorr: { type: 'xy', title: 'X–Y after correction', span: 0.05, i: () => S.Ic, q: () => S.Qc, plays: [['corrIQ', 'I/Q', 'screen-ink']] },
+  cxAfter: { type: 'spec', mode: 'complex', title: 'After correction (grey: before)', span: 4000,
+    layers: () => P.corr ? [{ d: SP.cxRaw, ghost: true }, { d: SP.cxCorr, col: 'trZ' }] : [{ d: SP.cxRaw, col: 'trZ' }] },
+  dftIn: { type: 'spec', mode: 'complex', title: 'DFT of z with mask · drag', span: 4000,
+    layers: () => [{ d: P.rx === 'real' ? SP.cxI : SP.cxCorr, col: 'trZ' }],
+    overlays: () => [{ fn: P.rx === 'real' ? maskMirror : maskG, col: 'trF' }], drag: f => setParam('selC', Math.round(Math.min(8000, Math.max(-8000, f)) / 10) * 10) },
+  dftOut: { type: 'spec', mode: 'complex', title: 'After mask and shift', span: 4000, layers: () => [{ d: SP.cxCorr, ghost: true }, { d: SP.dft, col: 'trZ' }],
+    overlays: () => [{ fn: P.rx === 'real' ? maskMirror : f => maskG(f - P.shift), col: 'trF' }] },
+  dftWf: { type: 'wf', src: 'dft', mode: 'complex', title: 'Waterfall of z · green lines are the mask · drag', span: 4000,
+    lines: () => { const m = P.rx === 'real' ? [P.selC, -P.selC] : [P.selC]; return m.flatMap(c => [{ f: c - P.selW / 2, col: 'trF' }, { f: c + P.selW / 2, col: 'trF' }]); },
+    drag: f => setParam('selC', Math.round(Math.min(8000, Math.max(-8000, f)) / 10) * 10) },
+  dftScope: { type: 'scope', title: 'Waveform of z', span: 0.02, traces: () => [{ d: S.zr, col: 'trI', name: 'Re' }, { d: S.zi, col: 'trQ', name: 'Im' }],
+    plays: [['dftIQ', 'Re/Im', 'screen-ink']] },
+  outScope: { type: 'scope', title: 'Waveform', span: 0.02, traces: () => [{ d: S.out, col: 'trZ', name: 'audio' }], plays: [['out', 'Play output', 'trZ']] },
+  outWf: { type: 'wf', src: 'out', mode: 'real', title: 'Waterfall of the audio', span: 4000 },
+  outSpec: { type: 'spec', mode: 'real', title: 'Spectrum', span: 4000, layers: () => [{ d: SP.out, col: 'trZ' }] }
+};
+
+const visible = new Set();
+function buildPlots() {
+  const ro = new ResizeObserver(es => { for (const e of es) drawPlot(e.target._pl); });
+  const io = new IntersectionObserver(es => {
+    for (const e of es) { if (e.isIntersecting) visible.add(e.target._pl); else visible.delete(e.target._pl); }
+    if (es.some(e => e.isIntersecting && e.target._pl.type === 'wf')) scheduleWF();
+  });
+  for (const el of document.querySelectorAll('[data-plot]')) {
+    const id = el.dataset.plot, pl = PLOTS[id];
+    const fig = document.createElement('figure'); fig.className = 'screen';
+    const hd = document.createElement('div'); hd.className = 'shd';
+    const st = document.createElement('span'); st.className = 'st'; st.textContent = pl.title; hd.append(st);
+    const kind = pl.mode || pl.type;
+    const sel = document.createElement('select'); sel.id = 'span-' + id; sel.setAttribute('aria-label', pl.title + ' span');
+    for (const v of SPANS[kind]) { const o = document.createElement('option'); o.value = String(v); o.textContent = spanLabel(kind, v); sel.append(o); }
+    sel.value = String(pl.span);
+    sel.addEventListener('change', () => { pl.span = +sel.value; drawPlot(pl); });
+    hd.append(sel);
+    for (const [pid, label, col] of pl.plays || []) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pbtn';
+      b.dataset.play = pid; b.dataset.label = label; b.style.setProperty('--c', `var(--${col})`);
+      b.textContent = '▶ ' + label; b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => togglePlay(pid));
+      hd.append(b);
+    }
+    const cv = document.createElement('canvas'); cv.className = pl.type === 'xy' || pl.type === 'wf' ? pl.type : '';
+    fig.append(hd, cv); el.replaceWith(fig);
+    pl.cv = cv; cv._pl = pl;
+    if (pl.drag) {
+      cv.classList.add('drag');
+      let down = false;
+      const at = e => { const r = cv.getBoundingClientRect(), [f0, f1] = specRange(pl); pl.drag(f0 + (e.clientX - r.left) / r.width * (f1 - f0)); };
+      cv.addEventListener('pointerdown', e => { down = true; cv.setPointerCapture(e.pointerId); at(e); });
+      cv.addEventListener('pointermove', e => { if (down) at(e); });
+      cv.addEventListener('pointerup', () => { down = false; });
+      cv.addEventListener('pointercancel', () => { down = false; });
+    }
+    ro.observe(cv); io.observe(cv);
+  }
+}
+const specRange = pl => pl.mode === 'real' ? [0, pl.span] : [-pl.span, pl.span];
+
+function drawPlot(pl) {
+  if (!pl || !pl.cv) return;
+  if (pl.type === 'scope') drawScope(pl); else if (pl.type === 'spec') drawSpec(pl); else if (pl.type === 'wf') drawWF(pl); else drawXY(pl);
+}
+function drawAll() { for (const id in PLOTS) drawPlot(PLOTS[id]); }
+function drawLive() { for (const id in PLOTS) { const pl = PLOTS[id]; if (pl.type !== 'spec') drawPlot(pl); } }
+const follow = () => !!cur && document.getElementById('follow').checked;
+
+function blank(c, W, H, msg) {
+  c.fillStyle = C.screen; c.fillRect(0, 0, W, H);
+  if (msg) { c.fillStyle = C.gridtxt; c.font = FONT; c.textAlign = 'center'; c.fillText(msg, W / 2, H / 2); c.textAlign = 'left'; }
+}
+
+function drawScope(pl) {
+  const { c, W, H } = setupCanvas(pl.cv);
+  const tr = pl.traces().filter(t => t.d);
+  if (!tr.length) return blank(c, W, H, 'computing…');
+  blank(c, W, H);
+  // graticule: 10 × 8 divisions
+  c.strokeStyle = C.grid; c.lineWidth = 1; c.beginPath();
+  for (let i = 1; i < 10; i++) { const x = Math.round(i * W / 10) + 0.5; c.moveTo(x, 0); c.lineTo(x, H); }
+  for (let i = 1; i < 8; i++) { const y = Math.round(i * H / 8) + 0.5; c.moveTo(0, y); c.lineTo(W, y); }
+  c.stroke();
+  c.strokeStyle = C['grid-strong']; c.beginPath(); c.moveTo(0, Math.round(H / 2) + 0.5); c.lineTo(W, Math.round(H / 2) + 0.5); c.stroke();
+  const ymax = niceCeil(Math.max(...tr.map(t => peakOf(t.d))) || 1e-6);
+  const ns = pl.span >= DUR ? N : Math.max(2, Math.round(pl.span * FS));
+  const start = pl.span >= DUR ? 0 : Math.floor(playPos() * FS) - (follow() ? ns : 0);
+  const yOf = v => H / 2 - v / ymax * (H / 2 - 4);
+  const spp = ns / W;
+  for (const t of tr) {
+    c.strokeStyle = C[t.col]; c.lineWidth = 1.3; c.beginPath();
+    if (spp <= 1.5) {
+      for (let i = 0; i < ns; i++) {
+        const v = t.d[((start + i) % N + N) % N], x = i / (ns - 1) * W;
+        i ? c.lineTo(x, yOf(v)) : c.moveTo(x, yOf(v));
+      }
+    } else {
+      for (let px = 0; px < W; px++) {
+        const i0 = Math.floor(px * spp), i1 = Math.max(i0 + 1, Math.floor((px + 1) * spp));
+        let mn = Infinity, mx = -Infinity;
+        for (let i = i0; i < i1; i++) { const v = t.d[((start + i) % N + N) % N]; if (v < mn) mn = v; if (v > mx) mx = v; }
+        c.moveTo(px + 0.5, yOf(mx)); c.lineTo(px + 0.5, yOf(mn) + 0.5);
+      }
+    }
+    c.stroke();
+    if (t.step > 1 && W * t.step / ns >= 5) {
+      c.fillStyle = C[t.col];
+      for (let i = 0; i < ns; i++) {
+        const n = ((start + i) % N + N) % N;
+        if (n % t.step) continue;
+        c.beginPath(); c.arc(i / (ns - 1) * W, yOf(t.d[n]), 2.2, 0, TAU); c.fill();
+      }
+    }
+  }
+  c.font = FONT; c.fillStyle = C.gridtxt;
+  c.fillText('±' + fmtAmp(ymax), 6, 13);
+  const per = pl.span >= DUR ? DUR * 1000 / 10 : pl.span * 1000 / 10;
+  c.textAlign = 'right'; c.fillText((per < 1 ? +per.toFixed(2) : +per.toFixed(1)) + ' ms/div', W - 6, H - 6);
+  let x = W - 6;
+  for (let i = tr.length - 1; i >= 0; i--) { c.fillStyle = C[tr[i].col]; c.fillText(tr[i].name, x, 13); x -= c.measureText(tr[i].name).width + 10; }
+  c.textAlign = 'left';
+}
+
+const DB_TOP = 0, DB_BOT = -110;
+
+// ---------- waterfalls ----------
+// One STFT image per waterfall covers the whole loop; playback only scrolls it, so drawing is cheap.
+// Recomputing is the costly part, so it waits until the controls stop moving and skips off-screen ones.
+const WF_HOP = 512, WF_FRAMES = N / WF_HOP, WF_LO = -100, WF_HI = -10;
+const WF_SRC = {
+  rf: { nfft: 512, mode: 'real', stages: ['rf'], get: () => [S.rf, null] },
+  dft: { nfft: 1024, mode: 'complex', stages: ['corr', 'dft'], get: () => P.rx === 'real' ? [S.Ic, null] : [S.Ic, S.Qc] },
+  out: { nfft: 1024, mode: 'real', stages: ['out'], get: () => [S.out, null] }
+};
+const WF = {};
+let wfTimer = null, LUT = null;
+const wfOn = () => document.getElementById('wfOn').checked;
+function stft(re, im, nfft, mode) {
+  const w = new Float64Array(nfft); let sw = 0;
+  for (let i = 0; i < nfft; i++) { w[i] = 0.5 - 0.5 * Math.cos(TAU * i / nfft); sw += w[i]; }
+  const bins = mode === 'real' ? nfft / 2 + 1 : nfft, db = new Float32Array(WF_FRAMES * bins);
+  const br = new Float64Array(nfft), bi = new Float64Array(nfft), ref = (mode === 'real' ? 2 : 1) ** 2 / (sw * sw);
+  for (let f = 0; f < WF_FRAMES; f++) {
+    const o = f * WF_HOP - nfft / 2;
+    for (let i = 0; i < nfft; i++) { const n = (o + i) & (N - 1); br[i] = re[n] * w[i]; bi[i] = im ? im[n] * w[i] : 0; }
+    fft(br, bi, false);
+    for (let j = 0; j < bins; j++) {
+      const k = mode === 'real' ? j : (j + nfft / 2) % nfft;
+      db[f * bins + j] = 10 * Math.log10((br[k] * br[k] + bi[k] * bi[k]) * ref + 1e-20);
+    }
+  }
+  return { db, bins, nfft, mode };
+}
+function hexRGB(h) { const v = parseInt(h.replace('#', ''), 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
+function buildLUT() {
+  const stops = [[0, hexRGB(C.screen)], [0.3, [10, 60, 90]], [0.55, hexRGB(C.trQ)], [0.8, hexRGB(C.trI)], [1, [255, 255, 255]]];
+  LUT = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255; let s = 0; while (s < stops.length - 2 && t > stops[s + 1][0]) s++;
+    const [t0, a] = stops[s], [t1, b] = stops[s + 1], u = (t - t0) / (t1 - t0);
+    for (let c = 0; c < 3; c++) LUT[i * 3 + c] = a[c] + (b[c] - a[c]) * u;
+  }
+}
+// Time runs upwards in the image, so frame f sits on row WF_FRAMES-1-f.
+function renderWF(o) {
+  if (!o.cv) o.cv = document.createElement('canvas');
+  o.cv.width = o.bins; o.cv.height = WF_FRAMES;
+  const ctx = o.cv.getContext('2d'), img = ctx.createImageData(o.bins, WF_FRAMES), px = img.data;
+  for (let f = 0; f < WF_FRAMES; f++) {
+    const row = (WF_FRAMES - 1 - f) * o.bins;
+    for (let j = 0; j < o.bins; j++) {
+      const t = Math.max(0, Math.min(255, Math.round((o.db[f * o.bins + j] - WF_LO) / (WF_HI - WF_LO) * 255)));
+      const p = (row + j) * 4; px[p] = LUT[t * 3]; px[p + 1] = LUT[t * 3 + 1]; px[p + 2] = LUT[t * 3 + 2]; px[p + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+function markWF(done) { for (const id in WF_SRC) if (!WF[id] || WF_SRC[id].stages.some(st => done.has(st))) WF_SRC[id].stale = true; }
+function scheduleWF() { clearTimeout(wfTimer); wfTimer = setTimeout(updateWF, 200); }
+function updateWF() {
+  if (!wfOn() || !S.out) return;
+  for (const id in PLOTS) {
+    const pl = PLOTS[id], src = WF_SRC[pl.src];
+    if (pl.type !== 'wf' || !src.stale || !visible.has(pl)) continue;
+    const [re, im] = src.get();
+    WF[pl.src] = stft(re, im, src.nfft, src.mode); renderWF(WF[pl.src]); src.stale = false;
+    drawPlot(pl);
+  }
+}
+function setWFVisible() {
+  const on = wfOn();
+  for (const id in PLOTS) if (PLOTS[id].type === 'wf' && PLOTS[id].cv) PLOTS[id].cv.closest('figure').hidden = !on;
+  if (on) scheduleWF();
+}
+function drawWF(pl) {
+  const { c, W, H } = setupCanvas(pl.cv), o = WF[pl.src];
+  if (!o || !o.cv) return blank(c, W, H, wfOn() ? 'computing…' : '');
+  blank(c, W, H);
+  const [f0, f1] = specRange(pl), L = 30, B = 16, PW = W - L, PH = H - B, df = FS / o.nfft;
+  const xOf = f => L + (f - f0) / (f1 - f0) * PW;
+  const sx = (pl.mode === 'real' ? f0 : f0 + FS / 2) / df, sw = (f1 - f0) / df;
+  // newest frame at the top, older ones below, wrapping round the loop
+  const F = WF_FRAMES, r = F - 1 - (Math.floor(playPos() / DUR * F) % F), h1 = (F - r) / F * PH;
+  c.imageSmoothingEnabled = true;
+  c.drawImage(o.cv, sx, r, sw, F - r, L, 0, PW, h1);
+  if (r > 0) c.drawImage(o.cv, sx, 0, sw, r, L, h1, PW, PH - h1);
+  c.font = FONT; c.fillStyle = C.gridtxt; c.strokeStyle = C['grid-strong']; c.lineWidth = 1; c.beginPath();
+  for (let t = 0; t < DUR; t++) { const y = Math.round(t / DUR * PH) + 0.5; c.moveTo(L - 4, y); c.lineTo(L, y); c.fillText(t ? '−' + t + 's' : 'now', 2, Math.max(10, y + 3)); }
+  const span = f1 - f0, stp = [250, 500, 1000, 2000, 4000].find(s => span / s <= 8) || 4000;
+  c.textAlign = 'center';
+  for (let f = Math.ceil(f0 / stp) * stp; f <= f1; f += stp) {
+    const x = Math.round(xOf(f)) + 0.5; c.moveTo(x, PH); c.lineTo(x, PH + 4);
+    c.fillText((f / 1000) + (f === 0 ? '' : 'k'), Math.min(W - 10, Math.max(L + 8, x)), H - 4);
+  }
+  c.stroke(); c.textAlign = 'left';
+  c.save(); c.beginPath(); c.rect(L, 0, PW, PH); c.clip();
+  for (const m of (pl.lines ? pl.lines() : [])) {
+    if (m.f < f0 || m.f > f1) continue;
+    const x = Math.round(xOf(m.f)) + 0.5;
+    c.strokeStyle = C[m.col]; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, m.label ? 12 : 0); c.lineTo(x, PH); c.stroke(); c.setLineDash([]);
+    if (m.label) { c.fillStyle = C[m.col]; c.textAlign = x > W - 30 ? 'right' : 'left'; c.fillText(m.label, x + (x > W - 30 ? -3 : 3), 10); c.textAlign = 'left'; }
+  }
+  c.restore();
+}
+function drawSpec(pl) {
+  const { c, W, H } = setupCanvas(pl.cv);
+  const layers = pl.layers().filter(l => l.d);
+  if (!layers.length) return blank(c, W, H, 'computing…');
+  blank(c, W, H);
+  const [f0, f1] = specRange(pl), L = 30, B = 16, PW = W - L, PH = H - B;
+  const xOf = f => L + (f - f0) / (f1 - f0) * PW;
+  const yOf = db => Math.max(0, Math.min(PH, (DB_TOP - db) / (DB_TOP - DB_BOT) * PH));
+  // grid
+  c.font = FONT; c.lineWidth = 1;
+  c.strokeStyle = C.grid; c.fillStyle = C.gridtxt; c.beginPath();
+  for (let db = 0; db >= DB_BOT; db -= 20) { const y = Math.round(yOf(db)) + 0.5; c.moveTo(L, y); c.lineTo(W, y); c.fillText(db, 2, Math.max(10, y + 3)); }
+  const span = f1 - f0, stp = [250, 500, 1000, 2000, 4000].find(s => span / s <= 8) || 4000;
+  c.textAlign = 'center';
+  for (let f = Math.ceil(f0 / stp) * stp; f <= f1; f += stp) {
+    const x = Math.round(xOf(f)) + 0.5; c.moveTo(x, 0); c.lineTo(x, PH);
+    const lab = (f / 1000) + (f === 0 ? '' : 'k');
+    c.fillText(lab, Math.min(W - 10, Math.max(L + 8, x)), H - 4);
+  }
+  c.stroke(); c.textAlign = 'left';
+  if (pl.mode === 'complex') { c.strokeStyle = C['grid-strong']; c.beginPath(); c.moveTo(Math.round(xOf(0)) + 0.5, 0); c.lineTo(Math.round(xOf(0)) + 0.5, PH); c.stroke(); }
+  c.save(); c.beginPath(); c.rect(L, 0, PW, PH); c.clip();
+  // filter / mask overlays: shaded passband plus response curve
+  for (const o of (pl.overlays ? pl.overlays() : [])) {
+    c.beginPath();
+    for (let px = 0; px <= PW; px++) {
+      const f = f0 + px / PW * span, g = o.fn(pl.mode === 'real' ? Math.abs(f) : f);
+      const y = yOf(g > 0 ? 20 * Math.log10(g) : -400);
+      px ? c.lineTo(L + px, y) : c.moveTo(L + px, y);
+    }
+    c.strokeStyle = C[o.col]; c.lineWidth = 1.4; c.setLineDash([5, 4]); c.stroke(); c.setLineDash([]);
+    c.lineTo(W, PH); c.lineTo(L, PH); c.closePath();
+    c.globalAlpha = 0.1; c.fillStyle = C[o.col]; c.fill(); c.globalAlpha = 1;
+  }
+  for (const l of layers) {
+    const d = l.d, n = d.length, fAt = pl.mode === 'real' ? k => k * FS / NF : k => (k - NF / 2) * FS / NF;
+    const k0 = Math.max(0, Math.floor((pl.mode === 'real' ? f0 : f0 + FS / 2) / (FS / NF)) - 1);
+    const k1 = Math.min(n - 1, Math.ceil((pl.mode === 'real' ? f1 : f1 + FS / 2) / (FS / NF)) + 1);
+    c.beginPath();
+    for (let k = k0; k <= k1; k++) { const x = xOf(fAt(k)), y = yOf(d[k]); k === k0 ? c.moveTo(x, y) : c.lineTo(x, y); }
+    if (l.ghost) {
+      c.lineTo(xOf(fAt(k1)), PH); c.lineTo(xOf(fAt(k0)), PH); c.closePath();
+      c.fillStyle = C.ghost; c.globalAlpha = 0.75; c.fill(); c.globalAlpha = 1;
+    } else {
+      c.strokeStyle = C[l.col]; c.lineWidth = l.line ? 1 : 1.3; c.globalAlpha = l.line ? 0.85 : 1; c.stroke(); c.globalAlpha = 1;
+      if (!l.line) {
+        c.lineTo(xOf(fAt(k1)), PH); c.lineTo(xOf(fAt(k0)), PH); c.closePath();
+        c.fillStyle = C[l.col]; c.globalAlpha = 0.12; c.fill(); c.globalAlpha = 1;
+      }
+    }
+  }
+  for (const m of (pl.markers ? pl.markers() : [])) {
+    if (m.f < f0 || m.f > f1) continue;
+    const x = Math.round(xOf(m.f)) + 0.5;
+    c.strokeStyle = C[m.col]; c.lineWidth = 1; c.setLineDash([2, 3]); c.beginPath(); c.moveTo(x, 12); c.lineTo(x, PH); c.stroke(); c.setLineDash([]);
+    c.fillStyle = C[m.col]; c.textAlign = x > W - 30 ? 'right' : 'left'; c.fillText(m.label, x + (x > W - 30 ? -3 : 3), 10); c.textAlign = 'left';
+  }
+  c.restore();
+  c.fillStyle = C.gridtxt; c.textAlign = 'right'; c.fillText('dBFS', W - 4, 11); c.textAlign = 'left';
+}
+
+function drawXY(pl) {
+  const { c, W, H } = setupCanvas(pl.cv);
+  const I = pl.i(), Q = pl.q();
+  if (!I || !Q) return blank(c, W, H, 'computing…');
+  blank(c, W, H);
+  const R = Math.min(W, H) / 2 - 12, cx = W / 2, cy = H / 2;
+  const sc = niceCeil(Math.max(peakOf(I), peakOf(Q)) || 1e-6);
+  c.strokeStyle = C.grid; c.lineWidth = 1; c.beginPath();
+  c.moveTo(cx - R, cy + 0.5); c.lineTo(cx + R, cy + 0.5); c.moveTo(cx + 0.5, cy - R); c.lineTo(cx + 0.5, cy + R);
+  c.stroke();
+  c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.arc(cx, cy, R / 2, 0, TAU); c.stroke();
+  const M = Math.round(pl.span * FS), start = Math.floor(playPos() * FS) - (follow() ? M : 0);
+  c.strokeStyle = C.trZ; c.lineWidth = 1; c.globalAlpha = 0.7; c.beginPath();
+  for (let i = 0; i < M; i++) {
+    const n = ((start + i) % N + N) % N, x = cx + I[n] / sc * R, y = cy - Q[n] / sc * R;
+    i ? c.lineTo(x, y) : c.moveTo(x, y);
+  }
+  c.stroke(); c.globalAlpha = 1;
+  c.font = FONT; c.fillStyle = C.trI; c.fillText('I →', cx + R - 22, cy - 5);
+  c.fillStyle = C.trQ; c.fillText('Q ↑', cx + 5, cy - R + 10);
+  c.fillStyle = C.gridtxt; c.fillText('outer ring ' + fmtAmp(sc), 6, H - 6);
+}
+
+// ---------- stats ----------
+function updateStats() {
+  updateBadges(); updateMeter();
+  document.getElementById('detInfo').textContent = DET.text;
+  const $ = id => document.getElementById(id), f4 = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(4);
+  const irr = (g, phDeg) => {
+    const p = phDeg * Math.PI / 180, num = 1 + 2 * g * Math.cos(p) + g * g, den = 1 - 2 * g * Math.cos(p) + g * g;
+    return den < 1e-12 ? '∞ (perfect)' : (10 * Math.log10(num / den)).toFixed(1) + ' dB';
+  };
+  $('t-mI').textContent = f4(EST.mI); $('t-mQ').textContent = f4(EST.mQ);
+  $('t-dcI').textContent = f4(P.dcI); $('t-dcQ').textContent = f4(P.dcQ);
+  $('t-sd').textContent = EST.sdI.toFixed(4) + ', ' + EST.sdQ.toFixed(4);
+  $('t-g').textContent = FMT.db(EST.gDb); $('t-gs').textContent = FMT.db(P.gainErrDb);
+  $('t-rho').textContent = f4(EST.s);
+  $('t-ph').textContent = FMT.deg(EST.phDeg); $('t-phs').textContent = FMT.deg(P.phaseErrDeg);
+  $('t-irr').textContent = irr(EST.g, EST.phDeg); $('t-irrs').textContent = irr(Math.pow(10, P.gainErrDb / 20), P.phaseErrDeg);
+}
+
+// ---------- S-meter ----------
+const S9 = -30;  // dBFS that reads S9
+const smPos = db => db <= S9 ? Math.max(0, 9 + (db - S9) / 6) / 9 * 0.6 : 0.6 + Math.min(60, db - S9) / 60 * 0.4;
+const sText = db => db <= S9 ? 'S' + Math.max(0, Math.round(9 + (db - S9) / 6)) : 'S9+' + Math.round(db - S9);
+function buildMeterScale() {
+  const sc = document.getElementById('smScale');
+  for (const u of [1, 3, 5, 7, 9]) { const e = document.createElement('span'); e.textContent = u; e.style.left = (u / 9 * 60) + '%'; sc.append(e); }
+  for (const d of [20, 40, 60]) { const e = document.createElement('span'); e.className = 'over'; e.textContent = '+' + d; e.style.left = (60 + d / 60 * 40) + '%'; sc.append(e); }
+}
+const meter = { shown: -200, peak: -200, peakT: 0 };
+function snrText() {
+  if (!(MET.p > 0)) return { snr: '–', chip: '' };
+  if (!(MET.pn > 0)) return { snr: '∞ <small>noise off</small>', chip: '' };
+  const ps = MET.p - MET.pn;
+  if (ps < 0.05 * MET.pn) return { snr: '< −13 dB <small>buried</small>', chip: ' · SNR <−13' };
+  const v = 10 * Math.log10(ps / MET.pn);
+  return { snr: (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' dB', chip: ' · SNR ' + Math.round(v) };
+}
+// Static readouts after a recompute; the bar is driven by updateMeterBar.
+function updateMeter() {
+  if (!MET.frames) return;
+  const db = 10 * Math.log10(MET.p + 1e-20), t = snrText();
+  document.getElementById('rdDb').textContent = db.toFixed(1) + ' dBFS';
+  document.getElementById('rdSnr').innerHTML = t.snr;
+  document.getElementById('rdBw').textContent = MET.bw < 1000 ? Math.round(MET.bw) + ' Hz' : (MET.bw / 1000).toFixed(2) + ' kHz';
+  meter.avg = db; meter.chip = t.chip;
+  updateMeterBar();
+}
+function updateMeterBar() {
+  if (!MET.frames) return;
+  let db = meter.avg;
+  if (cur) {
+    const now = performance.now(), lvl = MET.frames[Math.floor(playPos() / DUR * MET.frames.length) % MET.frames.length];
+    // fast attack, slow release, like a real meter
+    meter.shown = lvl > meter.shown ? lvl : Math.max(lvl, meter.shown - 0.6);
+    if (lvl > meter.peak || now - meter.peakT > 1500) { meter.peak = lvl; meter.peakT = now; }
+    db = meter.shown;
+  } else { meter.shown = meter.peak = db; }
+  const x = smPos(db) * 100;
+  const bar = document.getElementById('smBar');
+  bar.style.width = x + '%'; bar.style.setProperty('--full', (x > 0 ? 10000 / x : 100) + '%');
+  document.getElementById('smPeak').style.left = 'calc(' + smPos(meter.peak) * 100 + '% - 1px)';
+  document.getElementById('rdS').textContent = sText(db);
+  document.getElementById('tS').textContent = sText(db) + (meter.chip || '');
+}
+
+// ---------- animation ----------
+let animId = null;
+function startAnim() { if (!animId) animId = requestAnimationFrame(anim); }
+function anim() {
+  if (!cur) { animId = null; return; }
+  document.getElementById('prog').style.width = (playPos() / DUR * 100).toFixed(2) + '%';
+  if (document.getElementById('follow').checked) for (const pl of visible) if (pl.type !== 'spec') drawPlot(pl);
+  updateMeterBar();
+  animId = requestAnimationFrame(anim);
+}
+
+// ---------- boot ----------
+function boot() {
+  readColors();
+  // presets: station cards and the transport menu
+  const sel = document.getElementById('preset');
+  const groups = { st: document.createElement('optgroup'), ex: document.createElement('optgroup') };
+  groups.st.label = 'Stations'; groups.ex.label = 'Experiments'; sel.append(groups.st, groups.ex);
+  const scrollTo = el => el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  for (const pr of PRESETS) {
+    const o = document.createElement('option'); o.value = pr.id; o.textContent = pr.name; (pr.exp ? groups.ex : groups.st).append(o);
+    const d = document.createElement('div'); d.className = 'stn';
+    d.innerHTML = `<span class="f">${pr.f}</span><b>${pr.title}</b><p>${pr.desc}</p>`;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = pr.exp ? 'Try it' : 'Tune';
+    b.addEventListener('click', () => { applyPreset(pr.id); scrollTo(pr.exp && pr.opens ? document.getElementById(pr.opens) : document.getElementById('s-rf')); });
+    d.append(b); document.getElementById(pr.exp ? 'experiments' : 'stations').append(d);
+  }
+  for (const b of document.querySelectorAll('[data-preset]')) b.addEventListener('click', () => applyPreset(b.dataset.preset));
+  sel.addEventListener('change', () => { if (sel.value) applyPreset(sel.value); });
+  document.getElementById('vol').addEventListener('input', e => { if (master) master.gain.setTargetAtTime(+e.target.value, ctx.currentTime, 0.02); });
+  document.getElementById('stop').addEventListener('click', stopPlay);
+  document.getElementById('imbDemo').addEventListener('click', () => applyPreset('imb'));
+  document.getElementById('follow').addEventListener('change', drawLive);
+  const wfBox = document.getElementById('wfOn');
+  try { if (localStorage.getItem('audible-sdr-wf') === '0') wfBox.checked = false; } catch (e) { /* storage unavailable */ }
+  wfBox.addEventListener('change', () => { try { localStorage.setItem('audible-sdr-wf', wfBox.checked ? '1' : '0'); } catch (e) { /* ignore */ } setWFVisible(); });
+  buildControls(); buildPlots(); buildMeterScale(); updateButtons(); setWFVisible();
+  const retheme = () => { readColors(); drawAll(); };
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  setTimeout(() => { buildStations(); applyPreset('isbU'); for (const st of ORDER) markDirty(st); schedule(); }, 30);
+}
+boot();
+</script>

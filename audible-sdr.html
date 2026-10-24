@@ -162,6 +162,20 @@ button, select, input { font: inherit; color: inherit; }
 
 .stats { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .stats-wrap { overflow-x: auto; }
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px 24px; align-items: center; }
+.smeter { background: var(--screen); border: 1px solid var(--grid-strong); border-radius: 6px; padding: 10px 14px 8px; font: 11px var(--f-mono); color: var(--gridtxt); }
+.sm-scale { position: relative; height: 16px; }
+.sm-scale span { position: absolute; transform: translateX(-50%); }
+.sm-scale span.over { color: var(--trZ); }
+.sm-track { position: relative; height: 12px; background: var(--grid); border-radius: 2px; overflow: hidden; }
+.sm-track i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--trQ) 0%, var(--trI) 55%, var(--trZ) 60%, var(--trZ) 100%); background-size: var(--full, 100%) 100%; }
+.sm-track b { position: absolute; top: 0; bottom: 0; width: 2px; left: 0; background: var(--screen-ink); }
+.sm-foot { display: flex; justify-content: space-between; margin-top: 4px; }
+.readouts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; }
+.readouts dt { font-size: 12px; color: var(--muted); }
+.readouts dd { margin: 0; font: 500 1.25rem var(--f-mono); font-variant-numeric: tabular-nums; }
+.readouts dd small { font-size: 12px; color: var(--muted); font-weight: 400; }
+.tchip { font: 500 12.5px var(--f-mono); padding: 2px 8px; border-radius: 4px; background: var(--screen); color: var(--trI); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .adv { border: 1px dashed var(--rule); border-radius: 6px; min-width: 0; }
 .adv > summary { cursor: pointer; list-style: none; display: grid; grid-template-columns: auto auto 1fr; gap: 2px 10px; align-items: baseline; padding: 10px 14px; border-radius: 6px; }
 .adv > summary::-webkit-details-marker { display: none; }
@@ -211,6 +225,7 @@ footer p { max-width: 90ch; }
     </label>
     <label class="tctl" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.01" value="0.5"></label>
     <label class="tctl chk" for="follow"><input type="checkbox" id="follow" checked> Scopes follow playback</label>
+    <span class="tchip" id="tS" title="S-meter and SNR in the receiver passband">S–</span>
     <label class="tctl chk" for="wfOn" title="Waterfalls add some processing after each change"><input type="checkbox" id="wfOn" checked> Waterfalls</label>
     <button class="btn" id="stop" type="button">Stop</button>
   </div>
@@ -433,6 +448,20 @@ footer p { max-width: 90ch; }
       <div class="shead"><h2>DFT, mask and shift</h2><span class="dom digital">digital</span></div>
       <p>Take the DFT of the whole loop of z (131 072 points), multiply it by a mask that keeps only the part you want, then roll the bins to move that part along the frequency axis. Because positive and negative frequencies are now separate, the mask can pick a single sideband. The image that stage 4 could not separate is now simply somewhere else on the axis. Drag on the top spectrum to place the mask. The shift moves every component by the same number of hertz, which changes the pitch you hear, and harmonics stop being harmonic, which is why mistuned SSB sounds like Donald Duck.</p>
       <div class="controls" data-controls="dft"></div>
+      <div class="meters">
+        <div class="smeter" role="img" aria-label="S-meter" id="smeter">
+          <div class="sm-scale" id="smScale"></div>
+          <div class="sm-track"><i id="smBar"></i><b id="smPeak"></b></div>
+          <div class="sm-foot"><span>S-units, 6 dB each</span><span>dB over S9</span></div>
+        </div>
+        <dl class="readouts">
+          <div><dt>Signal</dt><dd id="rdS">–</dd></div>
+          <div><dt>Power in the mask</dt><dd id="rdDb">–</dd></div>
+          <div><dt>SNR</dt><dd id="rdSnr">–</dd></div>
+          <div><dt>Noise bandwidth</dt><dd id="rdBw">–</dd></div>
+        </dl>
+      </div>
+      <p class="note">The S-meter measures the power inside the mask, as a real receiver’s meter measures what gets through its IF filter, so it includes any noise. Each S-unit is 6 dB, and here S9 is −30 dBFS. It moves with the signal while audio plays. The SNR compares the signal with the noise the receiver lets through, which this simulation can work out exactly because it knows the noise it added. With noise switched on (section 1), narrow the mask and watch the SNR rise as the noise bandwidth falls, until the mask starts cutting into the signal itself.</p>
       <details class="adv" id="adv-rx">
         <summary><span class="adv-t">Why Q matters: the single-mixer receiver</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Hear what a receiver with only an I channel can and cannot separate.</span></summary>
         <div class="adv-body">
@@ -783,49 +812,49 @@ const FMT_OF = {};
 
 const BASE = { ifOn: true, adcDiv: 1, rx: 'iq', preOn: true, preOrder: 4, loWave: 'sine', gainErrDb: 0, phaseErrDeg: 0, dcI: 0, dcQ: 0, ifOrder: 6, corr: false, shift: 0, demod: 're' };
 const PRESETS = [
-  { id: 'am', name: 'AM broadcast · 3.0 kHz', f: '3.000 kHz · AM', title: 'Nursery tune on AM',
-    desc: 'Full carrier with both sidebands. Detected with |z|, so the LO phase does not matter.',
+  { id: 'am', name: "AM broadcast · 3.0 kHz", f: '3.000 kHz · AM', title: "Nursery tune on AM",
+    desc: "Full carrier with both sidebands. Detected with |z|, so the LO phase does not matter.",
     p: { preC: 3000, preBW: 4000, loF: 3000, ifCut: 1800, selC: 0, selW: 3400, demod: 'abs' } },
-  { id: 'isbU', name: 'ISB upper sideband · 7.5 kHz', f: '7.500 kHz · ISB upper', title: 'Arpeggio on the upper sideband',
-    desc: 'Two programmes share one suppressed carrier. The mask keeps positive frequencies only.',
+  { id: 'isbU', name: "ISB upper sideband · 7.5 kHz", f: '7.500 kHz · ISB upper', title: "Arpeggio on the upper sideband",
+    desc: "Two programmes share one suppressed carrier. The mask keeps positive frequencies only.",
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500 } },
-  { id: 'isbL', name: 'ISB lower sideband · 7.5 kHz', f: '7.500 kHz · ISB lower', title: 'Bass line on the lower sideband',
-    desc: 'Same tuning, mask moved to negative frequencies. A real-only mixer cannot do this.',
+  { id: 'isbL', name: "ISB lower sideband · 7.5 kHz", f: '7.500 kHz · ISB lower', title: "Bass line on the lower sideband",
+    desc: "Same tuning, mask moved to negative frequencies. A real-only mixer cannot do this.",
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: -850, selW: 1500 } },
-  { id: 'cq', name: 'G3ALI calling CQ · 11.4 kHz', f: '11.400 kHz · CW', title: 'CQ DE G3ALI',
-    desc: 'Two Morse signals 400 Hz apart, both in the IF passband. A 150 Hz mask picks out G3ALI and a −400 Hz shift sets a 700 Hz note.',
+  { id: 'cq', name: "G3ALI calling CQ · 11.4 kHz", f: '11.400 kHz · CW', title: "CQ DE G3ALI",
+    desc: "Two Morse signals 400 Hz apart, both in the IF passband. A 150 Hz mask picks out G3ALI and a −400 Hz shift sets a 700 Hz note.",
     p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 1100, selW: 150, shift: -400 } },
-  { id: 'cw', name: 'CW beacon · 11.0 kHz', f: '11.000 kHz · CW', title: '“SDR” beacon',
-    desc: 'Same tuning, mask moved to +700 Hz: now only the slow beacon is heard and the CQ call is gone.',
+  { id: 'cw', name: "CW beacon · 11.0 kHz", f: '11.000 kHz · CW', title: "“SDR” beacon",
+    desc: "Same tuning, mask moved to +700 Hz: now only the slow beacon is heard and the CQ call is gone.",
     p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 700, selW: 150 } },
-  { id: 'fm', opens: 'adv-det', name: 'NBFM · 12.75 kHz', f: '12.750 kHz · FM', title: 'A tune on narrowband FM',
-    desc: 'Constant amplitude, the tune is in the phase. Only the FM discriminator recovers it; try Re{z} or |z| instead.',
+  { id: 'fm', opens: 'adv-det', name: "NBFM · 12.75 kHz", f: '12.750 kHz · FM', title: "A tune on narrowband FM",
+    desc: "Constant amplitude, the tune is in the phase. Only the FM discriminator recovers it; try Re{z} or |z| instead.",
     p: { preC: 12750, preBW: 3000, loF: 12750, ifCut: 1500, selC: 0, selW: 2600, demod: 'fm', adcDiv: 4 } },
-  { id: 'sync', exp: true, opens: 'adv-det', name: 'Synchronous AM, one sideband', f: 'Section 10 · detectors', title: 'Synchronous AM',
-    desc: 'LO 50 Hz low, and the mask keeps only the carrier and upper sideband: half the bandwidth, so half the noise. The PLL finds the carrier and locks. Switch to the product detector to hear the 50 Hz offset it removes.',
+  { id: 'sync', exp: true, opens: 'adv-det', name: "Synchronous AM, one sideband", f: 'Section 10 · detectors', title: "Synchronous AM",
+    desc: "LO 50 Hz low, and the mask keeps only the carrier and upper sideband: half the bandwidth, so half the noise. The PLL finds the carrier and locks. Switch to the product detector to hear the 50 Hz offset it removes.",
     p: { preC: 3000, preBW: 4000, loF: 2950, ifCut: 1800, selC: 800, selW: 1700, demod: 'sync', adcDiv: 4 } },
-  { id: 'fsk', name: 'FSK data · 15 kHz', f: '15.000 kHz · FSK', title: 'Data at 62.5 baud',
-    desc: 'Mark and space at ±250 Hz, shifted up by 1.2 kHz into a comfortable pitch.',
+  { id: 'fsk', name: "FSK data · 15 kHz", f: '15.000 kHz · FSK', title: "Data at 62.5 baud",
+    desc: "Mark and space at ±250 Hz, shifted up by 1.2 kHz into a comfortable pitch.",
     p: { preC: 15000, preBW: 1500, loF: 15000, ifCut: 600, selC: 0, selW: 800, shift: 1200 } },
-  { id: 'lowif', exp: true, name: 'Low-IF: tuned 500 Hz low', f: 'Section 9 · shift', title: 'Low-IF tuning',
-    desc: 'LO at 7.0 kHz puts the upper sideband at +500…+2100 Hz. The DFT stage selects it and shifts it back by −500 Hz.',
+  { id: 'lowif', exp: true, name: "Low-IF: tuned 500 Hz low", f: 'Section 9 · shift', title: "Low-IF tuning",
+    desc: "LO at 7.0 kHz puts the upper sideband at +500…+2100 Hz. The DFT stage selects it and shifts it back by −500 Hz.",
     p: { preC: 7500, preBW: 4000, loF: 7000, ifCut: 2400, selC: 1300, selW: 1500, shift: -500 } },
-  { id: 'trap', exp: true, opens: 'adv-lo', name: '3rd-harmonic trap', f: 'Section 3 · LO harmonics', title: 'Square LO, no preselector',
-    desc: 'A square LO at 5 kHz also mixes at 15 kHz, so the FSK station appears. Narrow the preselector around 5 kHz, or switch to a sine LO, to remove it.',
+  { id: 'trap', exp: true, opens: 'adv-lo', name: "3rd-harmonic trap", f: 'Section 3 · LO harmonics', title: "Square LO, no preselector",
+    desc: "A square LO at 5 kHz also mixes at 15 kHz, so the FSK station appears. Narrow the preselector around 5 kHz, or switch to a sine LO, to remove it.",
     p: { preC: 8000, preBW: 16000, loF: 5000, loWave: 'square', ifCut: 800, selC: 0, selW: 1000, shift: 1200 } },
-  { id: 'alias', exp: true, opens: 'sec-adc', name: 'Aliasing: no anti-alias filter', f: 'Section 6 · sampling', title: 'Aliasing',
-    desc: 'ISB upper sampled at 4 kHz with the IF filter switched off. Every station folds into the ±2 kHz band. Switch the IF filter back on in section 6.',
+  { id: 'alias', exp: true, opens: 'sec-adc', name: "Aliasing: no anti-alias filter", f: 'Section 6 · sampling', title: "Aliasing",
+    desc: "ISB upper sampled at 4 kHz with the IF filter switched off. Every station folds into the ±2 kHz band. Switch the IF filter back on in section 6.",
     p: { preC: 8000, preBW: 16000, loF: 7500, ifCut: 1800, ifOn: false, adcDiv: 8, selC: 850, selW: 1500 } },
-  { id: 'real', exp: true, opens: 'adv-rx', name: 'Single-mixer receiver', f: 'Section 9 · receiver', title: 'No Q channel',
-    desc: 'ISB upper heard through I alone. The melody and the bass line cannot be separated. Switch the receiver back to I + jQ in section 9.',
+  { id: 'real', exp: true, opens: 'adv-rx', name: "Single-mixer receiver", f: 'Section 9 · receiver', title: "No Q channel",
+    desc: "ISB upper heard through I alone. The melody and the bass line cannot be separated. Switch the receiver back to I + jQ in section 9.",
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, rx: 'real' } },
-  { id: 'imb', exp: true, opens: 'sec-iq', name: 'Mismatched mixer', f: 'Section 8 · IQ mismatch', title: 'Gain and phase errors',
-    desc: 'ISB upper with 1.5 dB and 8° of quadrature error plus DC. The bass line leaks into the melody. Turn on correction in section 8.',
+  { id: 'imb', exp: true, opens: 'sec-iq', name: "Mismatched mixer", f: 'Section 8 · IQ mismatch', title: "Gain and phase errors",
+    desc: "ISB upper with 1.5 dB and 8° of quadrature error plus DC. The bass line leaks into the melody. Turn on correction in section 8.",
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, gainErrDb: 1.5, phaseErrDeg: 8, dcI: 0.01, dcQ: -0.008 } }
 ];
 
 // ---------- pipeline ----------
-const S = {}, SP = {}, EST = {}, DET = { text: '' };
+const S = {}, SP = {}, EST = {}, DET = { text: '' }, MET = {};
 const Hpre = f => { if (!P.preOn) return 1; const x = (f - P.preC) / (P.preBW / 2); return 1 / Math.sqrt(1 + Math.pow(x * x, P.preOrder)); };
 const Hif = f => !P.ifOn ? 1 : 1 / Math.sqrt(1 + Math.pow((f / P.ifCut) ** 2, P.ifOrder));
 const maskMirror = f => Math.max(maskG(f), maskG(-f));
@@ -833,6 +862,35 @@ const maskG = f => {
   const e = Math.min(40, P.selW / 4), a = Math.abs(f - P.selC), lo = P.selW / 2 - e / 2;
   return a <= lo ? 1 : a >= lo + e ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * (a - lo) / e);
 };
+
+// Expected |Z[k]|² per unit of antenna noise power, for z = I + jQ (S.nGz) and for I alone (S.nGI).
+// White noise through preselector, LO (every harmonic of a square LO), IF filter and ADC folding.
+// Assumes a balanced mixer: the small effect of the stage-2 faults on noise is ignored.
+function noiseGain(D) {
+  const f = qf(P.loF), hs = [];
+  for (let h = 1; h <= (P.loWave === 'square' ? 31 : 1) && h * f < FS / 2; h += 2) hs.push(h);
+  const alias = x => { x = ((x % FS) + FS) % FS; return x > FS / 2 ? FS - x : x; };
+  const H2 = x => Hpre(alias(x)) ** 2;
+  const Gz = new Float64Array(N), GI = new Float64Array(N);
+  for (let k = 0; k < N; k++) {
+    const fk = freqOf(k), hif = Hif(Math.abs(fk)) ** 2;
+    if (hif < 1e-12) continue;
+    let gz = 0, gi = 0;
+    for (const h of hs) {
+      const w = P.loWave === 'square' ? (4 / (Math.PI * h)) ** 2 : 1, dir = ((h - 1) / 2) % 2 ? -1 : 1;
+      gz += w * H2(fk + dir * h * f);
+      gi += w / 4 * (H2(fk + h * f) + H2(fk - h * f));
+    }
+    Gz[k] = gz * hif; GI[k] = gi * hif;
+  }
+  const fold = G => {
+    if (D === 1) return G;
+    const M = N / D, out = new Float64Array(N);
+    for (let k = -M / 2; k < M / 2; k++) { let s = 0; for (let m = 0; m < D; m++) s += G[(k + m * M) & (N - 1)]; out[k & (N - 1)] = s; }
+    return out;
+  };
+  S.nGz = fold(Gz); S.nGI = fold(GI);
+}
 
 const COMPUTE = {
   rf() {
@@ -875,6 +933,7 @@ const COMPUTE = {
     // Sampling every D-th value and reconstructing ideally is the same as folding every
     // alias k + m·N/D onto bin k and keeping only |f| < fs/2.
     const D = P.adcDiv;
+    noiseGain(D);
     if (D === 1) { S.adI = S.ifI; S.adQ = S.ifQ; SP.adc = SP.ifCx; return; }
     const M = N / D, re = new Float64Array(N), im = new Float64Array(N), F = S.ifF;
     for (let k = -M / 2; k < M / 2; k++) {
@@ -913,14 +972,24 @@ const COMPUTE = {
     const real = P.rx === 'real';
     if (real && !S.iF) { S.iF = dftOf(S.Ic); SP.cxI = specCx(S.Ic, new Float32Array(N)); }
     const { re, im } = real ? S.iF : S.zF, ks = real ? 0 : Math.round(P.shift / BIN), mask = real ? maskMirror : maskG;
-    const or = new Float64Array(N), oi = new Float64Array(N);
+    const or = new Float64Array(N), oi = new Float64Array(N), G = real ? S.nGI : S.nGz;
+    let nAcc = 0, bw = 0;
     for (let k = 0; k < N; k++) {
       const g = mask(freqOf(k));
-      if (g > 0) { const j = (k + ks) & (N - 1); or[j] = re[k] * g; oi[j] = im[k] * g; }
+      if (g > 0) { const j = (k + ks) & (N - 1); or[j] = re[k] * g; oi[j] = im[k] * g; nAcc += G[k] * g * g; bw += g * g; }
     }
     fft(or, oi, true);
     S.zr = Float32Array.from(or); S.zi = Float32Array.from(oi);
     SP.dft = specCx(S.zr, S.zi);
+    // What the S-meter and SNR readout see: power inside the mask, and the part of it that is noise.
+    let pt = 0;
+    const frames = new Float32Array(N / 512);
+    for (let f = 0; f < frames.length; f++) {
+      let a = 0;
+      for (let n = f * 512; n < (f + 1) * 512; n++) a += or[n] * or[n] + oi[n] * oi[n];
+      pt += a; frames[f] = 10 * Math.log10(a / 512 + 1e-20);
+    }
+    Object.assign(MET, { p: pt / N, pn: P.noise * P.noise * nAcc / N, bw: bw * BIN * (real ? 0.5 : 1), frames });
   },
   out() {
     const zr = S.zr, zi = S.zi, y = new Float32Array(N);
@@ -1090,7 +1159,7 @@ function togglePlay(id) {
 }
 function stopPlay() {
   if (cur) { fadeOut(cur); cur = null; }
-  updateButtons(); drawLive();
+  updateButtons(); drawLive(); updateMeterBar();
   document.getElementById('prog').style.width = '0';
 }
 function refreshAudio() {
@@ -1490,7 +1559,7 @@ function drawXY(pl) {
 
 // ---------- stats ----------
 function updateStats() {
-  updateBadges();
+  updateBadges(); updateMeter();
   document.getElementById('detInfo').textContent = DET.text;
   const $ = id => document.getElementById(id), f4 = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(4);
   const irr = (g, phDeg) => {
@@ -1506,6 +1575,52 @@ function updateStats() {
   $('t-irr').textContent = irr(EST.g, EST.phDeg); $('t-irrs').textContent = irr(Math.pow(10, P.gainErrDb / 20), P.phaseErrDeg);
 }
 
+// ---------- S-meter ----------
+const S9 = -30;  // dBFS that reads S9
+const smPos = db => db <= S9 ? Math.max(0, 9 + (db - S9) / 6) / 9 * 0.6 : 0.6 + Math.min(60, db - S9) / 60 * 0.4;
+const sText = db => db <= S9 ? 'S' + Math.max(0, Math.round(9 + (db - S9) / 6)) : 'S9+' + Math.round(db - S9);
+function buildMeterScale() {
+  const sc = document.getElementById('smScale');
+  for (const u of [1, 3, 5, 7, 9]) { const e = document.createElement('span'); e.textContent = u; e.style.left = (u / 9 * 60) + '%'; sc.append(e); }
+  for (const d of [20, 40, 60]) { const e = document.createElement('span'); e.className = 'over'; e.textContent = '+' + d; e.style.left = (60 + d / 60 * 40) + '%'; sc.append(e); }
+}
+const meter = { shown: -200, peak: -200, peakT: 0 };
+function snrText() {
+  if (!(MET.p > 0)) return { snr: '–', chip: '' };
+  if (!(MET.pn > 0)) return { snr: '∞ <small>noise off</small>', chip: '' };
+  const ps = MET.p - MET.pn;
+  if (ps < 0.05 * MET.pn) return { snr: '< −13 dB <small>buried</small>', chip: ' · SNR <−13' };
+  const v = 10 * Math.log10(ps / MET.pn);
+  return { snr: (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' dB', chip: ' · SNR ' + Math.round(v) };
+}
+// Static readouts after a recompute; the bar is driven by updateMeterBar.
+function updateMeter() {
+  if (!MET.frames) return;
+  const db = 10 * Math.log10(MET.p + 1e-20), t = snrText();
+  document.getElementById('rdDb').textContent = db.toFixed(1) + ' dBFS';
+  document.getElementById('rdSnr').innerHTML = t.snr;
+  document.getElementById('rdBw').textContent = MET.bw < 1000 ? Math.round(MET.bw) + ' Hz' : (MET.bw / 1000).toFixed(2) + ' kHz';
+  meter.avg = db; meter.chip = t.chip;
+  updateMeterBar();
+}
+function updateMeterBar() {
+  if (!MET.frames) return;
+  let db = meter.avg;
+  if (cur) {
+    const now = performance.now(), lvl = MET.frames[Math.floor(playPos() / DUR * MET.frames.length) % MET.frames.length];
+    // fast attack, slow release, like a real meter
+    meter.shown = lvl > meter.shown ? lvl : Math.max(lvl, meter.shown - 0.6);
+    if (lvl > meter.peak || now - meter.peakT > 1500) { meter.peak = lvl; meter.peakT = now; }
+    db = meter.shown;
+  } else { meter.shown = meter.peak = db; }
+  const x = smPos(db) * 100;
+  const bar = document.getElementById('smBar');
+  bar.style.width = x + '%'; bar.style.setProperty('--full', (x > 0 ? 10000 / x : 100) + '%');
+  document.getElementById('smPeak').style.left = 'calc(' + smPos(meter.peak) * 100 + '% - 1px)';
+  document.getElementById('rdS').textContent = sText(db);
+  document.getElementById('tS').textContent = sText(db) + (meter.chip || '');
+}
+
 // ---------- animation ----------
 let animId = null;
 function startAnim() { if (!animId) animId = requestAnimationFrame(anim); }
@@ -1513,6 +1628,7 @@ function anim() {
   if (!cur) { animId = null; return; }
   document.getElementById('prog').style.width = (playPos() / DUR * 100).toFixed(2) + '%';
   if (document.getElementById('follow').checked) for (const pl of visible) if (pl.type !== 'spec') drawPlot(pl);
+  updateMeterBar();
   animId = requestAnimationFrame(anim);
 }
 
@@ -1541,7 +1657,7 @@ function boot() {
   const wfBox = document.getElementById('wfOn');
   try { if (localStorage.getItem('audible-sdr-wf') === '0') wfBox.checked = false; } catch (e) { /* storage unavailable */ }
   wfBox.addEventListener('change', () => { try { localStorage.setItem('audible-sdr-wf', wfBox.checked ? '1' : '0'); } catch (e) { /* ignore */ } setWFVisible(); });
-  buildControls(); buildPlots(); updateButtons(); setWFVisible();
+  buildControls(); buildPlots(); buildMeterScale(); updateButtons(); setWFVisible();
   const retheme = () => { readColors(); drawAll(); };
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
   new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
