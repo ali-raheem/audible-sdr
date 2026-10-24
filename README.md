@@ -8,4 +8,6 @@ Plain JavaScript, no build step, no dependencies. Open `index.html` in a browser
 - Stations: AM at 3 kHz, ISB at 7.5 kHz (different programmes on each sideband), CW at 11 kHz, FSK at 15 kHz.
 - Stage 2: mixer gain/phase/DC errors, estimated from signal statistics (mean, σ, I–Q correlation) and corrected.
 
-`audible-sdr.html` is the same page without the document wrapper (used for the claude.ai artifact); `index.html` is the standalone version.
+By Ali Raheem, G3ALI — https://g3ali.com/sdr/ (mirror: https://ali-raheem.github.io/audible-sdr/)
+
+`audible-sdr.html` is the source page without the document wrapper; run `./build.sh` to regenerate the standalone `index.html`.

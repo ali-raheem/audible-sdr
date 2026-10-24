@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"></head><body>
 <title>Audible SDR</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -90,6 +90,8 @@ button, select, input { font: inherit; color: inherit; }
 /* intro */
 .intro { padding-block: 40px 28px; display: grid; gap: 22px; }
 .eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.byline { font-family: var(--f-mono); font-size: 13px; color: var(--muted); margin-top: -12px; }
+.byline b { color: var(--accent); font-weight: 500; }
 .lede { font-size: 1.1rem; max-width: 70ch; }
 .flow-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); padding: 10px; }
 .flow { display: block; width: 100%; min-width: 760px; height: auto; }
@@ -163,6 +165,7 @@ button, select, input { font: inherit; color: inherit; }
 .stats td.f { font-family: var(--f-body); color: var(--muted); font-size: 12.5px; }
 
 footer { border-top: 1px solid var(--rule); padding-block: 24px 48px; color: var(--muted); font-size: 13px; }
+footer { display: grid; gap: 10px; }
 footer p { max-width: 90ch; }
 
 @media (max-width: 640px) {
@@ -194,7 +197,8 @@ footer p { max-width: 90ch; }
   <section class="intro">
     <div class="eyebrow">Quadrature direct-conversion receiver · simulated at 32 kHz · 4.096 s loop</div>
     <h1>Audible SDR</h1>
-    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with four stations between 3 and 15 kHz buried in noise. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right.</p>
+    <p class="byline">By Ali Raheem, <b>G3ALI</b> · <a href="https://g3ali.com/">g3ali.com</a> · <a href="https://github.com/ali-raheem/audible-sdr">Source on GitHub</a></p>
+    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with five transmissions between 3 and 15 kHz buried in noise, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right.</p>
 
     <div class="flow-wrap">
       <svg class="flow" viewBox="0 0 1010 200" role="img" aria-label="Signal flow: antenna, preselector, two mixers fed by a quadrature LO, IF low-pass filters, ADCs, then I plus jQ, IQ correction, DFT, mask and shift, inverse DFT, real part, speaker">
@@ -261,7 +265,7 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">1</div></div>
     <div class="body">
       <div class="shead"><h2>Antenna</h2><span class="dom analog">analog</span></div>
-      <p>Everything arrives at once. Listen and you can pick out the AM carrier as a steady 3 kHz whistle, the Morse beacon chirping at 11 kHz and the 15 kHz data signal, which many adults barely hear. The two programmes on the 7.5 kHz ISB station are there too, but at this point they sound like scrambled noise. Drag on the spectrum to tune the receiver.</p>
+      <p>Everything arrives at once. Listen and you can pick out the AM carrier as a steady 3 kHz whistle, two Morse signals at 11 kHz (a slow beacon and G3ALI calling CQ) and the 15 kHz data signal, which many adults barely hear. The two programmes on the 7.5 kHz ISB station are there too, but at this point they sound like scrambled noise. Drag on the spectrum to tune the receiver.</p>
       <div class="controls" data-controls="rf"></div>
       <div class="plots"><div data-plot="rfScope"></div><div data-plot="rfSpec"></div></div>
     </div>
@@ -362,6 +366,7 @@ footer p { max-width: 90ch; }
 
   <footer>
     <p>Filters are applied in the frequency domain over the whole 4.096 s loop, so they are zero-phase and the loop repeats without a click. The preselector and IF filters use Butterworth magnitude responses of the chosen order. Mixing happens at the 32 kHz simulation rate, so sum products above 16 kHz alias back down; the IF filter removes them just as it removes the in-band ones. Spectra are Welch averages of 32 Hann-windowed 2048-point DFTs.</p>
+    <p>Audible SDR by Ali Raheem, G3ALI. Source code and issues: <a href="https://github.com/ali-raheem/audible-sdr">github.com/ali-raheem/audible-sdr</a>. 73!</p>
   </footer>
 </main>
 
@@ -489,6 +494,34 @@ function addNote(buf, t0, dur, f, amp, harms, fmax, r) {
 const taper = (f, lo, hi, e = 40) => f < lo - e || f > hi + e ? 0 : f < lo ? 0.5 + 0.5 * Math.cos(Math.PI * (lo - f) / e) : f > hi ? 0.5 + 0.5 * Math.cos(Math.PI * (f - hi) / e) : 1;
 function normalise(x) { let p = 0; for (let i = 0; i < x.length; i++) p = Math.max(p, Math.abs(x[i])); for (let i = 0; i < x.length; i++) x[i] /= p || 1; return x; }
 
+const MORSE = {
+  A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--',
+  N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..',
+  0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-', 5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.'
+};
+// Keyed carrier: dit = 1 unit, dah = 3, gaps of 1 / 3 / 7 units; raised-cosine edges stop key clicks.
+function addMorse(buf, text, f, unit, t0, amp) {
+  const keys = [];
+  text.split(' ').forEach((word, w) => {
+    if (w) keys.push('0000');
+    [...word].forEach((ch, c) => {
+      if (c) keys.push('00');
+      keys.push(MORSE[ch].split('').map(e => e === '.' ? '1' : '111').join('0'));
+    });
+  });
+  const code = keys.join('0'), ramp = 0.005 * FS, w = TAU * f / FS;
+  for (let i = 0; i < code.length;) {
+    if (code[i] !== '1') { i++; continue; }
+    let j = i; while (code[j] === '1') j++;
+    const a0 = Math.round((t0 + i * unit) * FS), b0 = Math.round((t0 + j * unit) * FS);
+    for (let n = a0; n < b0; n++) {
+      const e = Math.min(1, (n - a0) / ramp, (b0 - n) / ramp);
+      buf[n % N] += amp * (0.5 - 0.5 * Math.cos(Math.PI * e)) * Math.cos(w * n);
+    }
+    i = j;
+  }
+}
+
 const ST = {};
 function buildStations() {
   const r = mulberry32(20261024);
@@ -524,18 +557,10 @@ function buildStations() {
     ST.isb[n] = 0.14 * ((a1.re[n] + a2.re[n]) * Math.cos(w) - (a1.im[n] - a2.im[n]) * Math.sin(w));
   }
 
-  // CW: "SDR" at 12 wpm
-  const code = '10101' + '000' + '1110101' + '000' + '1011101', unit = 0.1 * FS, start = 0.4 * FS, ramp = 0.005 * FS;
-  const env = new Float32Array(N);
-  for (let i = 0; i < code.length;) {
-    if (code[i] !== '1') { i++; continue; }
-    let j = i; while (code[j] === '1') j++;
-    const a0 = Math.round(start + i * unit), b0 = Math.round(start + j * unit);
-    for (let n = a0; n < b0; n++) { const e = Math.min(1, (n - a0) / ramp, (b0 - n) / ramp); env[n] = 0.5 - 0.5 * Math.cos(Math.PI * e); }
-    i = j;
-  }
+  // CW: a slow "SDR" beacon on 11.0 kHz, and G3ALI calling CQ 400 Hz above it at about 32 wpm
   ST.cw = new Float32Array(N);
-  for (let n = 0; n < N; n++) ST.cw[n] = 0.18 * env[n] * Math.cos(TAU * 11000 * n / FS);
+  addMorse(ST.cw, 'SDR', 11000, 0.1, 0.4, 0.18);
+  addMorse(ST.cw, 'CQ DE G3ALI', 11400, DUR / 110, 0, 0.15);
 
   // FSK: 62.5 baud, 15 kHz ± 250 Hz; integer cycles per bit keep it phase-continuous
   ST.fsk = new Float32Array(N);
@@ -577,7 +602,7 @@ const CONTROLS = {
     { k: 'noise', label: 'Noise level (σ)', min: 0, max: 0.3, step: 0.005, fmt: 'amp' },
     { k: 'stAM', type: 'chk', label: 'AM 3 kHz' },
     { k: 'stISB', type: 'chk', label: 'ISB 7.5 kHz' },
-    { k: 'stCW', type: 'chk', label: 'CW 11 kHz' },
+    { k: 'stCW', type: 'chk', label: 'CW 11.0 / 11.4 kHz' },
     { k: 'stFSK', type: 'chk', label: 'FSK 15 kHz' }
   ],
   pre: [
@@ -632,9 +657,12 @@ const PRESETS = [
   { id: 'isbL', name: 'ISB lower sideband · 7.5 kHz', f: '7.500 kHz · ISB lower', title: 'Bass line on the lower sideband',
     desc: 'Same tuning, mask moved to negative frequencies. A real-only mixer cannot do this.',
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: -850, selW: 1500 } },
-  { id: 'cw', name: 'CW beacon, shifted to 700 Hz', f: '11.000 kHz · CW', title: '“SDR” in Morse',
-    desc: 'Tuned to zero beat, so the carrier sits at 0 Hz and is silent. A +700 Hz shift makes it a tone.',
-    p: { preC: 11000, preBW: 1500, loF: 11000, ifCut: 500, selC: 0, selW: 120, shift: 700 } },
+  { id: 'cq', name: 'G3ALI calling CQ · 11.4 kHz', f: '11.400 kHz · CW', title: 'CQ DE G3ALI',
+    desc: 'Two Morse signals 400 Hz apart, both in the IF passband. A 150 Hz mask picks out G3ALI and a −400 Hz shift sets a 700 Hz note.',
+    p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 1100, selW: 150, shift: -400 } },
+  { id: 'cw', name: 'CW beacon · 11.0 kHz', f: '11.000 kHz · CW', title: '“SDR” beacon',
+    desc: 'Same tuning, mask moved to +700 Hz: now only the slow beacon is heard and the CQ call is gone.',
+    p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 700, selW: 150 } },
   { id: 'fsk', name: 'FSK data · 15 kHz', f: '15.000 kHz · FSK', title: 'Data at 62.5 baud',
     desc: 'Mark and space at ±250 Hz, shifted up by 1.2 kHz into a comfortable pitch.',
     p: { preC: 15000, preBW: 1500, loF: 15000, ifCut: 600, selC: 0, selW: 800, shift: 1200 } },
