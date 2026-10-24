@@ -25,6 +25,7 @@
   --trI: #ffb21e;
   --trQ: #36c9dc;
   --trZ: #ff6aa8;
+  --trZ-ink: #b0216a;
   --trF: #8be07a;
   --ghost: #3a4d45;
   --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
@@ -35,7 +36,7 @@
   :root:not([data-theme="light"]) {
     --bg: #0d1210; --panel: #131a17; --ink: #dce4df; --muted: #8e9e96; --rule: #26322d;
     --accent: #ffb21e; --accent-ink: #1a1200; --lineI: #ffb21e; --lineQ: #36c9dc;
-    --analog: #ffb21e; --digital: #5fb7dc; --screen: #060a09; --screen-ink: #b9c9c1;
+    --analog: #ffb21e; --digital: #5fb7dc; --trZ-ink: #ff6aa8; --screen: #060a09; --screen-ink: #b9c9c1;
     --grid: #16211d; --grid-strong: #253530; --gridtxt: #71877d; --ghost: #33463e;
     color-scheme: dark;
   }
@@ -43,7 +44,7 @@
 :root[data-theme="dark"] {
   --bg: #0d1210; --panel: #131a17; --ink: #dce4df; --muted: #8e9e96; --rule: #26322d;
   --accent: #ffb21e; --accent-ink: #1a1200; --lineI: #ffb21e; --lineQ: #36c9dc;
-  --analog: #ffb21e; --digital: #5fb7dc; --screen: #060a09; --screen-ink: #b9c9c1;
+  --analog: #ffb21e; --digital: #5fb7dc; --trZ-ink: #ff6aa8; --screen: #060a09; --screen-ink: #b9c9c1;
   --grid: #16211d; --grid-strong: #253530; --gridtxt: #71877d; --ghost: #33463e;
   color-scheme: dark;
 }
@@ -141,6 +142,8 @@ button, select, input { font: inherit; color: inherit; }
 .chk input { accent-color: var(--accent); width: 16px; height: 16px; }
 .sub-block { border: 1px dashed var(--rule); border-radius: 6px; padding: 14px 16px; display: grid; gap: 12px; }
 .sub-block h3 { color: var(--accent); }
+.dom.part { color: var(--trZ-ink); }
+.stage.part2 .rail .num { border-style: dashed; }
 
 .plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px; }
 .plots.three { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
@@ -237,7 +240,7 @@ footer p { max-width: 90ch; }
         <text class="sub" x="424" y="138">Q</text>
         <path class="wI" d="M412 55 H497 V80" marker-end="url(#ar)"/>
         <path class="wQ" d="M412 145 H497 V120" marker-end="url(#ar)"/>
-        <a href="#s-iq"><rect class="blk" x="462" y="82" width="70" height="36" rx="4"/><text x="497" y="98">I + jQ</text><text class="sub" x="497" y="111">IQ fix</text></a>
+        <a href="#s-iq"><rect class="blk" x="462" y="82" width="70" height="36" rx="4"/><text x="497" y="98">I + jQ</text></a><a href="#s-iqfix"><text class="sub" x="497" y="111">IQ fix</text></a>
         <path class="w" d="M532 100 H560" marker-end="url(#ar)"/>
         <a href="#s-dft"><rect class="blk" x="562" y="82" width="56" height="36" rx="4"/><text x="590" y="104">DFT</text></a>
         <path class="w" d="M618 100 H646" marker-end="url(#ar)"/>
@@ -294,13 +297,8 @@ footer p { max-width: 90ch; }
     <div class="body">
       <div class="shead"><h2>Mixers</h2><span class="dom analog">analog</span></div>
       <p>Each path multiplies the preselected signal by its LO, which makes sum and difference frequencies. A station at <code>f<sub>LO</sub> + Δ</code> lands at Δ and at <code>2f<sub>LO</sub> + Δ</code>. The I output on its own cannot tell <code>f<sub>LO</sub> + Δ</code> from <code>f<sub>LO</sub> − Δ</code>: both fold onto the same audio frequency. With the ISB preset, play I alone and you hear the melody and the bass line on top of each other. Q has the same spectrum magnitude but a different phase, and that phase is what separates them later.</p>
-      <div class="controls" data-controls="mix-main"></div>
       <div class="plots"><div data-plot="mixScope"></div><div data-plot="mixSpec"></div></div>
-      <div class="sub-block">
-        <h3>Stage 2 · Hardware imperfections</h3>
-        <p class="note">Real quadrature mixers are never perfect. The Q branch may have slightly more gain than I, the LO split may not be exactly 90°, and LO leakage adds a DC offset to each output. Set some errors here, then watch the image appear in step 6 and remove it with the correction there.</p>
-        <div class="controls" data-controls="mix"></div>
-      </div>
+      <p class="note">Real mixers are not perfect: the Q branch may have a little more gain than I, the LO split may not be exactly 90°, and LO leakage adds DC. Section 7 lets you add those faults here and then remove them digitally.</p>
     </div>
   </section>
 
@@ -319,14 +317,32 @@ footer p { max-width: 90ch; }
     <div class="body">
       <div class="shead"><h2>Complex baseband, I + jQ</h2><span class="dom digital">digital</span></div>
       <p>From here on the samples are numbers in a computer. Treat each pair as one complex sample <code>z = I + jQ</code>. Its spectrum is no longer mirror-symmetric: whatever was above the LO is now at positive frequencies and whatever was below it is at negative frequencies. The X–Y plot traces z in the complex plane.</p>
-      <div class="plots three"><div data-plot="xyRaw"></div><div data-plot="xyCorr"></div><div data-plot="cxSpec"></div></div>
+      <div class="plots"><div data-plot="xyZ"></div><div data-plot="cxRawSpec"></div></div>
+    </div>
+  </section>
+
+  <section class="stage digital part2" id="s-iqfix">
+    <div class="rail"><div class="num">7</div></div>
+    <div class="body">
+      <div class="shead"><h2>IQ mismatch and correction</h2><span class="dom part">part 2</span><span class="dom analog">analog fault</span><span class="dom digital">digital fix</span></div>
+      <p>Everything so far assumed a perfect quadrature mixer. Real ones have two I and Q paths built from separate parts, so they never match exactly. With a gain ratio <code>g</code> and a phase error <code>φ</code> the Q path delivers <code>g·sin(θ − φ)</code> instead of <code>sin θ</code>, and the LO leaking into the mixer adds a DC offset to each output. Look back at the LO’s X–Y plot in section 3 while you move the sliders: the circle becomes a tilted ellipse.</p>
+      <p>The damage shows up as an <em>image</em>. A signal at +Δ also appears, weaker, at −Δ, and the other way round. How much weaker is the image rejection ratio. A 1 dB gain error alone limits it to about 25 dB, and 1° of phase error alone to about 41 dB. That is enough to hear the lower sideband of the ISB station leak into the upper one, which is exactly the job the I + jQ receiver was meant to do.</p>
+
       <div class="sub-block">
-        <h3>Stage 2 · Blind IQ correction</h3>
-        <p class="note">Gain and phase mismatch stretch and tilt the X–Y cloud into an ellipse and leak a mirror image of the spectrum across 0 Hz. The correction uses only statistics of the received signal. The means give the DC offsets. The ratio of standard deviations gives the gain error. The correlation between I and Q gives the phase error, because <code>ρ = sin(ψ)</code>. Then <code>Q′ = (Q/g − I·sin ψ) / cos ψ</code>. This assumes the true I and Q are uncorrelated with equal power. That holds for most signals but not for a lone carrier tuned to exactly 0 Hz, so try it with the AM preset and see it fail.</p>
+        <h3>1 · Inject the fault</h3>
+        <p class="note">These errors are applied in the analog part of the receiver: gain and phase to the Q output of the LO in section 3, and DC offsets at the mixer outputs in section 4. The image is easiest to see with the CQ preset, where two clean tones appear on the positive side, and easiest to hear with the ISB upper preset.</p>
+        <div class="controls" data-controls="mix"></div>
+        <div><button class="btn" type="button" id="imbDemo">Load the mismatch demo</button></div>
+      </div>
+      <div class="plots"><div data-plot="xyRaw"></div><div data-plot="cxBefore"></div></div>
+
+      <div class="sub-block">
+        <h3>2 · Estimate it from the signal and correct it</h3>
+        <p class="note">The receiver cannot see the fault directly, but it can measure statistics of the received signal. The means give the DC offsets. The ratio of standard deviations gives the gain error. The correlation between I and Q gives the phase error, because <code>ρ = sin ψ</code> with <code>ψ = −φ</code>. The correction is then <code>Q′ = (Q/g − I·sin ψ) / cos ψ</code>. This assumes the true I and Q are uncorrelated and of equal power. That holds for most signals but not for a lone carrier at exactly 0 Hz, so try the AM preset with a fault and watch the estimate go wrong.</p>
         <div class="controls" data-controls="corr"></div>
         <div class="stats-wrap">
           <table class="stats">
-            <thead><tr><th>Quantity</th><th>Measured from signal</th><th>Set in stage 4</th><th>How it is estimated</th></tr></thead>
+            <thead><tr><th>Quantity</th><th>Measured from signal</th><th>Injected fault</th><th>How it is estimated</th></tr></thead>
             <tbody>
               <tr><th>DC offset I</th><td id="t-mI">–</td><td id="t-dcI">–</td><td class="f">mean(I)</td></tr>
               <tr><th>DC offset Q</th><td id="t-mQ">–</td><td id="t-dcQ">–</td><td class="f">mean(Q)</td></tr>
@@ -339,11 +355,12 @@ footer p { max-width: 90ch; }
           </table>
         </div>
       </div>
+      <div class="plots"><div data-plot="xyCorr"></div><div data-plot="cxAfter"></div></div>
     </div>
   </section>
 
   <section class="stage digital" id="s-dft">
-    <div class="rail"><div class="num">7</div></div>
+    <div class="rail"><div class="num">8</div></div>
     <div class="body">
       <div class="shead"><h2>DFT, mask and shift</h2><span class="dom digital">digital</span></div>
       <p>Take the DFT of the whole loop of z (131 072 points), multiply it by a mask that keeps only the part you want, then roll the bins to move that part along the frequency axis. Because positive and negative frequencies are now separate, the mask can pick a single sideband. The image that stage 4 could not separate is now simply somewhere else on the axis. Drag on the top spectrum to place the mask. The shift moves every component by the same number of hertz, which changes the pitch you hear, and harmonics stop being harmonic, which is why mistuned SSB sounds like Donald Duck.</p>
@@ -353,7 +370,7 @@ footer p { max-width: 90ch; }
   </section>
 
   <section class="stage digital" id="s-out">
-    <div class="rail"><div class="num">8</div></div>
+    <div class="rail"><div class="num">9</div></div>
     <div class="body">
       <div class="shead"><h2>Inverse DFT to audio</h2><span class="dom digital">digital</span></div>
       <p>The inverse DFT gives a complex time signal again, but a speaker needs a real one. Taking the real part of a one-sided spectrum demodulates SSB, CW and FSK. For AM, use the magnitude <code>|z|</code> instead: an envelope detector, which does not care about the carrier’s phase or a small tuning error.</p>
@@ -613,7 +630,6 @@ const CONTROLS = {
     { k: 'loF', label: 'LO frequency', min: 100, max: 15900, step: 5, fmt: 'lo' },
     { k: 'loWave', type: 'sel', label: 'LO waveform', opts: [['sine', 'Sine (ideal multiplier)'], ['square', 'Square (switching mixer)']] }
   ],
-  'mix-main': [],
   mix: [
     { k: 'gainErrDb', label: 'Q gain error', min: -3, max: 3, step: 0.1, fmt: 'db' },
     { k: 'phaseErrDeg', label: 'Q phase error', min: -30, max: 30, step: 0.5, fmt: 'deg' },
@@ -671,7 +687,7 @@ const PRESETS = [
     desc: 'A square LO at 5 kHz also mixes at 15 kHz, so the FSK station appears. Narrow the preselector around 5 kHz, or switch to a sine LO, to remove it.',
     p: { preC: 8000, preBW: 16000, loF: 5000, loWave: 'square', ifCut: 800, selC: 0, selW: 1000, shift: 1200 } },
   { id: 'imb', name: 'Mismatched mixer (stage 2)', f: 'demo', title: 'Gain and phase errors',
-    desc: 'ISB upper with 1.5 dB and 8° of quadrature error plus DC. The bass line leaks into the melody. Turn on correction in step 6.',
+    desc: 'ISB upper with 1.5 dB and 8° of quadrature error plus DC. The bass line leaks into the melody. Turn on correction in section 7.',
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, gainErrDb: 1.5, phaseErrDeg: 8, dcI: 0.01, dcQ: -0.008 } }
 ];
 
@@ -955,9 +971,12 @@ const PLOTS = {
     plays: [['ifI', 'I', 'trI'], ['ifQ', 'Q', 'trQ'], ['ifIQ', 'I/Q', 'screen-ink']] },
   ifSpec: { type: 'spec', mode: 'real', title: 'Spectrum · drag to set cut-off', span: 4000, layers: () => [{ d: SP.mixI, ghost: true }, { d: SP.ifQ, col: 'trQ', line: true }, { d: SP.ifI, col: 'trI' }],
     overlays: () => [{ fn: Hif, col: 'trF' }], drag: f => setParam('ifCut', Math.round(Math.min(8000, Math.max(50, f)) / 10) * 10) },
-  xyRaw: { type: 'xy', title: 'X–Y before correction', span: 0.05, i: () => S.ifI, q: () => S.ifQ },
+  xyZ: { type: 'xy', title: 'X–Y: z in the complex plane', span: 0.05, i: () => S.ifI, q: () => S.ifQ, plays: [['ifIQ', 'I/Q', 'screen-ink']] },
+  cxRawSpec: { type: 'spec', mode: 'complex', title: 'Spectrum of I + jQ', span: 4000, layers: () => [{ d: SP.cxRaw, col: 'trZ' }] },
+  xyRaw: { type: 'xy', title: 'X–Y with the fault', span: 0.05, i: () => S.ifI, q: () => S.ifQ, plays: [['ifIQ', 'I/Q', 'screen-ink']] },
+  cxBefore: { type: 'spec', mode: 'complex', title: 'Spectrum with the fault', span: 4000, layers: () => [{ d: SP.cxRaw, col: 'trZ' }] },
   xyCorr: { type: 'xy', title: 'X–Y after correction', span: 0.05, i: () => S.Ic, q: () => S.Qc, plays: [['corrIQ', 'I/Q', 'screen-ink']] },
-  cxSpec: { type: 'spec', mode: 'complex', title: 'Spectrum of I + jQ', span: 4000,
+  cxAfter: { type: 'spec', mode: 'complex', title: 'After correction (grey: before)', span: 4000,
     layers: () => P.corr ? [{ d: SP.cxRaw, ghost: true }, { d: SP.cxCorr, col: 'trZ' }] : [{ d: SP.cxRaw, col: 'trZ' }] },
   dftIn: { type: 'spec', mode: 'complex', title: 'DFT of z with mask · drag', span: 4000, layers: () => [{ d: SP.cxCorr, col: 'trZ' }],
     overlays: () => [{ fn: maskG, col: 'trF' }], drag: f => setParam('selC', Math.round(Math.min(8000, Math.max(-8000, f)) / 10) * 10) },
@@ -1190,6 +1209,7 @@ function boot() {
   sel.addEventListener('change', () => { if (sel.value) applyPreset(sel.value); });
   document.getElementById('vol').addEventListener('input', e => { if (master) master.gain.setTargetAtTime(+e.target.value, ctx.currentTime, 0.02); });
   document.getElementById('stop').addEventListener('click', stopPlay);
+  document.getElementById('imbDemo').addEventListener('click', () => applyPreset('imb'));
   document.getElementById('follow').addEventListener('change', drawLive);
   buildControls(); buildPlots(); updateButtons();
   const retheme = () => { readColors(); drawAll(); };
