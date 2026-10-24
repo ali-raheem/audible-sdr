@@ -160,6 +160,10 @@ button, select, input { font: inherit; color: inherit; }
 
 .stats { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .stats-wrap { overflow-x: auto; }
+.dets { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 10px 22px; }
+.dets div { min-width: 0; }
+.dets dt { font-weight: 600; font-size: 14px; }
+.dets dd { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
 .stats th, .stats td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
 .stats th { font-weight: 500; color: var(--muted); }
 .stats td { font-family: var(--f-mono); font-size: 12.5px; }
@@ -199,7 +203,7 @@ footer p { max-width: 90ch; }
     <div class="eyebrow">Quadrature direct-conversion receiver · simulated at 32 kHz · 4.096 s loop</div>
     <h1>Audible SDR</h1>
     <p class="byline">By Ali Raheem, <b>G3ALI</b> · <a href="https://g3ali.com/">g3ali.com</a> · <a href="https://github.com/ali-raheem/audible-sdr">Source on GitHub</a></p>
-    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with five transmissions between 3 and 15 kHz buried in noise, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right.</p>
+    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with six transmissions between 3 and 15 kHz buried in noise, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right.</p>
 
     <div class="flow-wrap">
       <svg class="flow" viewBox="0 0 1010 200" role="img" aria-label="Signal flow: antenna, preselector, two mixers fed by a quadrature LO, IF low-pass filters, ADCs, then I plus jQ, IQ correction, DFT, mask and shift, inverse DFT, real part, speaker">
@@ -234,8 +238,8 @@ footer p { max-width: 90ch; }
         </a>
         <path class="wI" d="M338 55 H360" marker-end="url(#ar)"/>
         <path class="wQ" d="M338 145 H360" marker-end="url(#ar)"/>
-        <rect class="blk" x="362" y="42" width="50" height="26" rx="4"/><text x="387" y="59">ADC</text>
-        <rect class="blk" x="362" y="132" width="50" height="26" rx="4"/><text x="387" y="149">ADC</text>
+        <a href="#s-adc"><rect class="blk" x="362" y="42" width="50" height="26" rx="4"/><text x="387" y="59">ADC</text>
+        <rect class="blk" x="362" y="132" width="50" height="26" rx="4"/><text x="387" y="149">ADC</text></a>
         <text class="sub" x="424" y="48">I</text>
         <text class="sub" x="424" y="138">Q</text>
         <path class="wI" d="M412 55 H497 V80" marker-end="url(#ar)"/>
@@ -247,9 +251,9 @@ footer p { max-width: 90ch; }
         <a href="#s-dft"><rect class="blk" x="648" y="82" width="100" height="36" rx="4"/><text x="698" y="98">Mask · Shift</text><text class="sub" x="698" y="111">×H(f), roll bins</text></a>
         <path class="w" d="M748 100 H776" marker-end="url(#ar)"/>
         <a href="#s-out"><rect class="blk" x="778" y="82" width="56" height="36" rx="4"/><text x="806" y="104">iDFT</text></a>
-        <path class="w" d="M834 100 H862" marker-end="url(#ar)"/>
-        <a href="#s-out"><rect class="blk" x="864" y="82" width="64" height="36" rx="4"/><text x="896" y="98">Re{z}</text><text class="sub" x="896" y="111">or |z|</text></a>
-        <path class="w" d="M928 100 H956" marker-end="url(#ar)"/>
+        <path class="w" d="M834 100 H854" marker-end="url(#ar)"/>
+        <a href="#s-out"><rect class="blk" x="856" y="82" width="80" height="36" rx="4"/><text x="896" y="98">Detector</text><text class="sub" x="896" y="111">Re, |z|, PLL, FM</text></a>
+        <path class="w" d="M936 100 H956" marker-end="url(#ar)"/>
         <path class="w" d="M960 92 H968 L984 80 V120 L968 108 H960 Z"/>
         <path class="w" d="M990 88 Q998 100 990 112"/>
       </svg>
@@ -266,7 +270,7 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">1</div></div>
     <div class="body">
       <div class="shead"><h2>Antenna</h2><span class="dom analog">analog</span></div>
-      <p>Everything arrives at once. Listen and you can pick out the AM carrier as a steady 3 kHz whistle, two Morse signals at 11 kHz (a slow beacon and G3ALI calling CQ) and the 15 kHz data signal, which many adults barely hear. The two programmes on the 7.5 kHz ISB station are there too, but at this point they sound like scrambled noise. Drag on the spectrum to tune the receiver.</p>
+      <p>Everything arrives at once. Listen and you can pick out the AM carrier as a steady 3 kHz whistle, two Morse signals at 11 kHz (a slow beacon and G3ALI calling CQ), a narrowband FM tune at 12.75 kHz and the 15 kHz data signal, which many adults barely hear. The two programmes on the 7.5 kHz ISB station are there too, but at this point they sound like scrambled noise. Drag on the spectrum to tune the receiver.</p>
       <div class="controls" data-controls="rf"></div>
       <div class="plots"><div data-plot="rfScope"></div><div data-plot="rfSpec"></div></div>
     </div>
@@ -298,7 +302,7 @@ footer p { max-width: 90ch; }
       <div class="shead"><h2>Mixers</h2><span class="dom analog">analog</span></div>
       <p>Each path multiplies the preselected signal by its LO, which makes sum and difference frequencies. A station at <code>f<sub>LO</sub> + Δ</code> lands at Δ and at <code>2f<sub>LO</sub> + Δ</code>. The I output on its own cannot tell <code>f<sub>LO</sub> + Δ</code> from <code>f<sub>LO</sub> − Δ</code>: both fold onto the same audio frequency. With the ISB preset, play I alone and you hear the melody and the bass line on top of each other. Q has the same spectrum magnitude but a different phase, and that phase is what separates them later.</p>
       <div class="plots"><div data-plot="mixScope"></div><div data-plot="mixSpec"></div></div>
-      <p class="note">Real mixers are not perfect: the Q branch may have a little more gain than I, the LO split may not be exactly 90°, and LO leakage adds DC. Section 7 lets you add those faults here and then remove them digitally.</p>
+      <p class="note">Real mixers are not perfect: the Q branch may have a little more gain than I, the LO split may not be exactly 90°, and LO leakage adds DC. Section 8 lets you add those faults here and then remove them digitally.</p>
     </div>
   </section>
 
@@ -306,23 +310,34 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">5</div></div>
     <div class="body">
       <div class="shead"><h2>IF filter</h2><span class="dom analog">analog</span></div>
-      <p>The same low-pass filter on I and on Q. In a zero-IF receiver the “IF” is baseband, so this is the channel filter and the ADC’s anti-alias filter in one. It removes the sum products near <code>2f<sub>LO</sub></code> and anything outside the channel. A real receiver would now decimate to a much lower sample rate. Drag on the spectrum to set the cut-off.</p>
+      <p>The same low-pass filter on I and on Q. In a zero-IF receiver the “IF” is baseband, so this is the channel filter and the ADC’s anti-alias filter in one. It removes the sum products near <code>2f<sub>LO</sub></code> and anything outside the channel. It is also the anti-alias filter for the ADC in the next section: switch it off there and see what folds in. Drag on the spectrum to set the cut-off.</p>
       <div class="controls" data-controls="if"></div>
       <div class="plots"><div data-plot="ifScope"></div><div data-plot="ifSpec"></div></div>
     </div>
   </section>
 
-  <section class="stage digital" id="s-iq">
+  <section class="stage digital" id="s-adc">
     <div class="rail"><div class="num">6</div></div>
     <div class="body">
+      <div class="shead"><h2>ADC and sample rate</h2><span class="dom analog">analog</span><span class="dom digital">→ digital</span></div>
+      <p>The IF output is still a continuous voltage. A pair of ADCs samples I and Q at a rate <code>f<sub>s</sub></code>, and from then on the receiver only knows the band <code>−f<sub>s</sub>/2 … +f<sub>s</sub>/2</code>. Anything outside it does not vanish. It folds back into the band, which is called aliasing, and once it has folded no later filter can separate it from the wanted signal. Lower the sample rate and the spectrum narrows to the green band. With the IF filter in circuit nothing harmful folds in. Switch it off and stations from all over the 16 kHz “RF” band land on top of the one you wanted.</p>
+      <p>Because I and Q are sampled together, the usable band is the full <code>±f<sub>s</sub>/2</code>, twice what a single real ADC at the same rate covers. Real SDRs usually sample fast (an RTL-SDR runs at a few MS/s) and then lower the rate digitally in stages with CIC and half-band filters. Each stage follows the same rule as here: filter first, then drop samples. Lower rates make every later step cheaper.</p>
+      <div class="controls" data-controls="adc"></div>
+      <div class="plots"><div data-plot="adcScope"></div><div data-plot="adcSpec"></div></div>
+    </div>
+  </section>
+
+  <section class="stage digital" id="s-iq">
+    <div class="rail"><div class="num">7</div></div>
+    <div class="body">
       <div class="shead"><h2>Complex baseband, I + jQ</h2><span class="dom digital">digital</span></div>
-      <p>From here on the samples are numbers in a computer. Treat each pair as one complex sample <code>z = I + jQ</code>. Its spectrum is no longer mirror-symmetric: whatever was above the LO is now at positive frequencies and whatever was below it is at negative frequencies. The X–Y plot traces z in the complex plane.</p>
+      <p>The samples are now numbers in a computer. Treat each pair as one complex sample <code>z = I + jQ</code>. Its spectrum is no longer mirror-symmetric: whatever was above the LO is now at positive frequencies and whatever was below it is at negative frequencies. The X–Y plot traces z in the complex plane.</p>
       <div class="plots"><div data-plot="xyZ"></div><div data-plot="cxRawSpec"></div></div>
     </div>
   </section>
 
   <section class="stage digital part2" id="s-iqfix">
-    <div class="rail"><div class="num">7</div></div>
+    <div class="rail"><div class="num">8</div></div>
     <div class="body">
       <div class="shead"><h2>IQ mismatch and correction</h2><span class="dom part">part 2</span><span class="dom analog">analog fault</span><span class="dom digital">digital fix</span></div>
       <p>Everything so far assumed a perfect quadrature mixer. Real ones have two I and Q paths built from separate parts, so they never match exactly. With a gain ratio <code>g</code> and a phase error <code>φ</code> the Q path delivers <code>g·sin(θ − φ)</code> instead of <code>sin θ</code>, and the LO leaking into the mixer adds a DC offset to each output. Look back at the LO’s X–Y plot in section 3 while you move the sliders: the circle becomes a tilted ellipse.</p>
@@ -360,21 +375,29 @@ footer p { max-width: 90ch; }
   </section>
 
   <section class="stage digital" id="s-dft">
-    <div class="rail"><div class="num">8</div></div>
+    <div class="rail"><div class="num">9</div></div>
     <div class="body">
       <div class="shead"><h2>DFT, mask and shift</h2><span class="dom digital">digital</span></div>
       <p>Take the DFT of the whole loop of z (131 072 points), multiply it by a mask that keeps only the part you want, then roll the bins to move that part along the frequency axis. Because positive and negative frequencies are now separate, the mask can pick a single sideband. The image that stage 4 could not separate is now simply somewhere else on the axis. Drag on the top spectrum to place the mask. The shift moves every component by the same number of hertz, which changes the pitch you hear, and harmonics stop being harmonic, which is why mistuned SSB sounds like Donald Duck.</p>
+      <p>The receiver switch shows what all of this buys you. A <em>single-mixer</em> receiver only has I, a real signal whose spectrum is always mirror-symmetric. Its mask can only be mirrored too, and it cannot shift: moving a real signal’s positive half up moves its negative half down. A real direct-conversion receiver tunes with its LO instead. Try it with the ISB presets: the melody and the bass line come out together whatever you do with the mask.</p>
       <div class="controls" data-controls="dft"></div>
       <div class="plots three"><div data-plot="dftIn"></div><div data-plot="dftOut"></div><div data-plot="dftScope"></div></div>
     </div>
   </section>
 
   <section class="stage digital" id="s-out">
-    <div class="rail"><div class="num">9</div></div>
+    <div class="rail"><div class="num">10</div></div>
     <div class="body">
-      <div class="shead"><h2>Inverse DFT to audio</h2><span class="dom digital">digital</span></div>
-      <p>The inverse DFT gives a complex time signal again, but a speaker needs a real one. Taking the real part of a one-sided spectrum demodulates SSB, CW and FSK. For AM, use the magnitude <code>|z|</code> instead: an envelope detector, which does not care about the carrier’s phase or a small tuning error.</p>
+      <div class="shead"><h2>Inverse DFT and detector</h2><span class="dom digital">digital</span></div>
+      <p>The inverse DFT gives a complex time signal again, but a speaker needs a real one. Turning z into audio is the detector’s job, and each mode of transmission wants a different one.</p>
+      <dl class="dets">
+        <div><dt>Product detector, <code>Re{z}</code></dt><dd>For SSB, CW and FSK. A classic receiver multiplies by a beat-frequency oscillator (BFO) and keeps the real part. Here the shift in section 9 is the BFO.</dd></div>
+        <div><dt>Envelope, <code>|z|</code></dt><dd>The diode detector of a crystal set. It ignores phase, so tuning errors do not matter, but it distorts when one sideband is missing or the carrier fades.</dd></div>
+        <div><dt>Synchronous AM, <code>Re{z·e<sup>−jφ̂</sup>}</code></dt><dd>A phase-locked loop follows the carrier and rotates it onto the real axis: a product detector that tunes itself. It still works on a single sideband plus carrier, which halves the noise bandwidth and lets you avoid interference on the other side. Try the “Synchronous AM” preset, then switch to the product detector.</dd></div>
+        <div><dt>FM discriminator, <code>arg(z[n]·z*[n−1])</code></dt><dd>The phase step between samples is the instantaneous frequency. This only works with I and Q, because a real signal has no phase to measure. On the FSK station it recovers the data bits as a square wave.</dd></div>
+      </dl>
       <div class="controls" data-controls="out"></div>
+      <p class="note mono" id="detInfo"></p>
       <div class="plots"><div data-plot="outScope"></div><div data-plot="outSpec"></div></div>
     </div>
   </section>
@@ -432,6 +455,12 @@ function dftOf(a, b) {
 }
 // Zero-phase filter: multiply by a real, even H(|f|) and transform back. Returns [re, im] in time.
 function applyH(F, H) {
+  const { re, im } = applyHF(F, H);
+  fft(re, im, true);
+  return [re, im];
+}
+// The same, but stays in the frequency domain.
+function applyHF(F, H) {
   const re = new Float64Array(N), im = new Float64Array(N);
   for (let k = 0; k <= N / 2; k++) {
     const g = H(k * BIN);
@@ -439,8 +468,7 @@ function applyH(F, H) {
     re[k] = F.re[k] * g; im[k] = F.im[k] * g;
     if (k && k < N / 2) { const j = N - k; re[j] = F.re[j] * g; im[j] = F.im[j] * g; }
   }
-  fft(re, im, true);
-  return [re, im];
+  return { re, im };
 }
 function filterReal(x, H) {
   const re = Float64Array.from(x), im = new Float64Array(N);
@@ -586,13 +614,29 @@ function buildStations() {
     ph %= TAU;
   }
 
+  // NBFM at 12.75 kHz, ±400 Hz deviation, audio 100–800 Hz
+  const m4 = new Float32Array(N);
+  [72, 71, 69, 67, 65, 64, 62, 60, 60, 62, 64, 65, 67, 69, 71, 72]
+    .forEach((m, i) => addNote(m4, i * STEP, STEP * 0.9, midi(m), 1, [1, .25], 800, r));
+  const fmm = normalise(filterReal(m4, f => taper(f, 100, 800)));
+  ST.fm = new Float32Array(N);
+  let acc = 0;
+  for (let n = 0; n < N; n++) acc += fmm[n];
+  const drift = acc / N;  // tiny DC left over; removing it keeps the phase periodic over the loop
+  acc = 0;
+  for (let n = 0; n < N; n++) {
+    ST.fm[n] = 0.15 * Math.cos(TAU * 12750 * n / FS + TAU * 400 * acc / FS);
+    acc += fmm[n] - drift;
+  }
+
   ST.noise = new Float32Array(N);
   for (let n = 0; n < N; n++) ST.noise[n] = gauss(r);
 }
 
 // ---------- parameters ----------
 const P = {
-  noise: 0.03, stAM: true, stISB: true, stCW: true, stFSK: true,
+  noise: 0.03, stAM: true, stISB: true, stCW: true, stFM: true, stFSK: true,
+  ifOn: true, adcDiv: 1, rx: 'iq',
   preOn: true, preC: 7500, preBW: 4000, preOrder: 4,
   loF: 7500, loWave: 'sine',
   gainErrDb: 0, phaseErrDeg: 0, dcI: 0, dcQ: 0,
@@ -618,6 +662,7 @@ const CONTROLS = {
     { k: 'stAM', type: 'chk', label: 'AM 3 kHz' },
     { k: 'stISB', type: 'chk', label: 'ISB 7.5 kHz' },
     { k: 'stCW', type: 'chk', label: 'CW 11.0 / 11.4 kHz' },
+    { k: 'stFM', type: 'chk', label: 'FM 12.75 kHz' },
     { k: 'stFSK', type: 'chk', label: 'FSK 15 kHz' }
   ],
   pre: [
@@ -638,29 +683,35 @@ const CONTROLS = {
   ],
   if: [
     { k: 'ifCut', label: 'Cut-off (−3 dB)', min: 50, max: 8000, step: 10, fmt: 'hz' },
-    { k: 'ifOrder', label: 'Order', min: 1, max: 10, step: 1, fmt: 'order' }
+    { k: 'ifOrder', label: 'Order', min: 1, max: 10, step: 1, fmt: 'order' },
+    { k: 'ifOn', type: 'chk', label: 'IF filter in circuit' }
+  ],
+  adc: [
+    { k: 'adcDiv', type: 'sel', num: true, label: 'Sample rate f<sub>s</sub>', opts: [[1, '32 kHz (±16 kHz)'], [2, '16 kHz (±8 kHz)'], [4, '8 kHz (±4 kHz)'], [8, '4 kHz (±2 kHz)'], [16, '2 kHz (±1 kHz)']] },
+    { k: 'ifOn', type: 'chk', label: 'IF filter in circuit (anti-alias)', id: 'ifOn2' }
   ],
   corr: [{ k: 'corr', type: 'chk', label: 'Apply DC, gain and phase correction' }],
   dft: [
+    { k: 'rx', type: 'sel', label: 'Receiver', opts: [['iq', 'I + jQ (image-rejecting)'], ['real', 'Single mixer, I only']] },
     { k: 'selC', label: 'Mask centre', min: -8000, max: 8000, step: 10, fmt: 'shz' },
     { k: 'selW', label: 'Mask width', min: 20, max: 8000, step: 10, fmt: 'hz' },
     { k: 'shift', label: 'Frequency shift', min: -4000, max: 4000, step: 10, fmt: 'shz' }
   ],
   out: [
-    { k: 'demod', type: 'sel', label: 'Detector', opts: [['re', 'Re{z}  (SSB, CW, FSK)'], ['abs', '|z|  (AM envelope)']] }
+    { k: 'demod', type: 'sel', label: 'Detector', opts: [['re', 'Product, Re{z}  (SSB, CW, FSK)'], ['abs', 'Envelope, |z|  (AM)'], ['sync', 'Synchronous AM (PLL)'], ['fm', 'FM discriminator']] }
   ]
 };
 // Which pipeline stage each parameter invalidates
-const ORDER = ['rf', 'pre', 'lo', 'mix', 'if', 'corr', 'dft', 'out'];
+const ORDER = ['rf', 'pre', 'lo', 'mix', 'if', 'adc', 'corr', 'dft', 'out'];
 const KEY_STAGE = {
-  noise: 'rf', stAM: 'rf', stISB: 'rf', stCW: 'rf', stFSK: 'rf',
+  noise: 'rf', stAM: 'rf', stISB: 'rf', stCW: 'rf', stFM: 'rf', stFSK: 'rf', ifOn: 'if', adcDiv: 'adc', rx: 'dft',
   preOn: 'pre', preC: 'pre', preBW: 'pre', preOrder: 'pre',
   loF: 'lo', loWave: 'lo', gainErrDb: 'lo', phaseErrDeg: 'lo', dcI: 'mix', dcQ: 'mix',
   ifCut: 'if', ifOrder: 'if', corr: 'corr', selC: 'dft', selW: 'dft', shift: 'dft', demod: 'out'
 };
 const FMT_OF = {};
 
-const BASE = { preOn: true, preOrder: 4, loWave: 'sine', gainErrDb: 0, phaseErrDeg: 0, dcI: 0, dcQ: 0, ifOrder: 6, corr: false, shift: 0, demod: 're' };
+const BASE = { ifOn: true, adcDiv: 1, rx: 'iq', preOn: true, preOrder: 4, loWave: 'sine', gainErrDb: 0, phaseErrDeg: 0, dcI: 0, dcQ: 0, ifOrder: 6, corr: false, shift: 0, demod: 're' };
 const PRESETS = [
   { id: 'am', name: 'AM broadcast · 3.0 kHz', f: '3.000 kHz · AM', title: 'Nursery tune on AM',
     desc: 'Full carrier with both sidebands. Detected with |z|, so the LO phase does not matter.',
@@ -677,6 +728,12 @@ const PRESETS = [
   { id: 'cw', name: 'CW beacon · 11.0 kHz', f: '11.000 kHz · CW', title: '“SDR” beacon',
     desc: 'Same tuning, mask moved to +700 Hz: now only the slow beacon is heard and the CQ call is gone.',
     p: { preC: 11200, preBW: 1500, loF: 10300, ifCut: 1500, selC: 700, selW: 150 } },
+  { id: 'fm', name: 'NBFM · 12.75 kHz', f: '12.750 kHz · FM', title: 'A tune on narrowband FM',
+    desc: 'Constant amplitude, the tune is in the phase. Only the FM discriminator recovers it; try Re{z} or |z| instead.',
+    p: { preC: 12750, preBW: 3000, loF: 12750, ifCut: 1500, selC: 0, selW: 2600, demod: 'fm', adcDiv: 4 } },
+  { id: 'sync', name: 'Synchronous AM, one sideband', f: '3.000 kHz · AM', title: 'Synchronous AM',
+    desc: 'LO 50 Hz low, and the mask keeps only the carrier and upper sideband: half the bandwidth, so half the noise. The PLL finds the carrier and locks. Switch to the product detector to hear the 50 Hz offset it removes.',
+    p: { preC: 3000, preBW: 4000, loF: 2950, ifCut: 1800, selC: 800, selW: 1700, demod: 'sync', adcDiv: 4 } },
   { id: 'fsk', name: 'FSK data · 15 kHz', f: '15.000 kHz · FSK', title: 'Data at 62.5 baud',
     desc: 'Mark and space at ±250 Hz, shifted up by 1.2 kHz into a comfortable pitch.',
     p: { preC: 15000, preBW: 1500, loF: 15000, ifCut: 600, selC: 0, selW: 800, shift: 1200 } },
@@ -686,15 +743,22 @@ const PRESETS = [
   { id: 'trap', name: '3rd-harmonic trap', f: 'demo', title: 'Square LO, no preselector',
     desc: 'A square LO at 5 kHz also mixes at 15 kHz, so the FSK station appears. Narrow the preselector around 5 kHz, or switch to a sine LO, to remove it.',
     p: { preC: 8000, preBW: 16000, loF: 5000, loWave: 'square', ifCut: 800, selC: 0, selW: 1000, shift: 1200 } },
+  { id: 'alias', name: 'Aliasing: no anti-alias filter', f: 'demo', title: 'Aliasing',
+    desc: 'ISB upper sampled at 4 kHz with the IF filter switched off. Every station folds into the ±2 kHz band. Switch the IF filter back on in section 6.',
+    p: { preC: 8000, preBW: 16000, loF: 7500, ifCut: 1800, ifOn: false, adcDiv: 8, selC: 850, selW: 1500 } },
+  { id: 'real', name: 'Single-mixer receiver', f: 'demo', title: 'No Q channel',
+    desc: 'ISB upper heard through I alone. The melody and the bass line cannot be separated. Switch the receiver back to I + jQ in section 9.',
+    p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, rx: 'real' } },
   { id: 'imb', name: 'Mismatched mixer (stage 2)', f: 'demo', title: 'Gain and phase errors',
-    desc: 'ISB upper with 1.5 dB and 8° of quadrature error plus DC. The bass line leaks into the melody. Turn on correction in section 7.',
+    desc: 'ISB upper with 1.5 dB and 8° of quadrature error plus DC. The bass line leaks into the melody. Turn on correction in section 8.',
     p: { preC: 7500, preBW: 4000, loF: 7500, ifCut: 1800, selC: 850, selW: 1500, gainErrDb: 1.5, phaseErrDeg: 8, dcI: 0.01, dcQ: -0.008 } }
 ];
 
 // ---------- pipeline ----------
-const S = {}, SP = {}, EST = {};
+const S = {}, SP = {}, EST = {}, DET = { text: '' };
 const Hpre = f => { if (!P.preOn) return 1; const x = (f - P.preC) / (P.preBW / 2); return 1 / Math.sqrt(1 + Math.pow(x * x, P.preOrder)); };
-const Hif = f => 1 / Math.sqrt(1 + Math.pow((f / P.ifCut) ** 2, P.ifOrder));
+const Hif = f => !P.ifOn ? 1 : 1 / Math.sqrt(1 + Math.pow((f / P.ifCut) ** 2, P.ifOrder));
+const maskMirror = f => Math.max(maskG(f), maskG(-f));
 const maskG = f => {
   const e = Math.min(40, P.selW / 4), a = Math.abs(f - P.selC), lo = P.selW / 2 - e / 2;
   return a <= lo ? 1 : a >= lo + e ? 0 : 0.5 + 0.5 * Math.cos(Math.PI * (a - lo) / e);
@@ -704,7 +768,7 @@ const COMPUTE = {
   rf() {
     const x = new Float32Array(N);
     for (let n = 0; n < N; n++) {
-      x[n] = (P.stAM ? ST.am[n] : 0) + (P.stISB ? ST.isb[n] : 0) + (P.stCW ? ST.cw[n] : 0) + (P.stFSK ? ST.fsk[n] : 0) + P.noise * ST.noise[n];
+      x[n] = (P.stAM ? ST.am[n] : 0) + (P.stISB ? ST.isb[n] : 0) + (P.stCW ? ST.cw[n] : 0) + (P.stFM ? ST.fm[n] : 0) + (P.stFSK ? ST.fsk[n] : 0) + P.noise * ST.noise[n];
     }
     S.rf = x; S.rfF = dftOf(x); SP.rf = specReal(x);
   },
@@ -731,12 +795,29 @@ const COMPUTE = {
     S.mixI = I; S.mixQ = Q; S.mixF = dftOf(I, Q); SP.mixI = specReal(I); SP.mixQ = specReal(Q);
   },
   if() {
-    const [i, q] = applyH(S.mixF, Hif);  // filtering I + jQ with a real, even H filters I and Q alike
-    S.ifI = Float32Array.from(i); S.ifQ = Float32Array.from(q);
-    SP.ifI = specReal(S.ifI); SP.ifQ = specReal(S.ifQ);
+    S.ifF = applyHF(S.mixF, Hif);  // filtering I + jQ with a real, even H filters I and Q alike
+    const re = Float64Array.from(S.ifF.re), im = Float64Array.from(S.ifF.im);
+    fft(re, im, true);
+    S.ifI = Float32Array.from(re); S.ifQ = Float32Array.from(im);
+    SP.ifI = specReal(S.ifI); SP.ifQ = specReal(S.ifQ); SP.ifCx = specCx(S.ifI, S.ifQ);
+  },
+  adc() {
+    // Sampling every D-th value and reconstructing ideally is the same as folding every
+    // alias k + m·N/D onto bin k and keeping only |f| < fs/2.
+    const D = P.adcDiv;
+    if (D === 1) { S.adI = S.ifI; S.adQ = S.ifQ; SP.adc = SP.ifCx; return; }
+    const M = N / D, re = new Float64Array(N), im = new Float64Array(N), F = S.ifF;
+    for (let k = -M / 2; k < M / 2; k++) {
+      let sr = 0, si = 0;
+      for (let m = 0; m < D; m++) { const j = (k + m * M) & (N - 1); sr += F.re[j]; si += F.im[j]; }
+      re[k & (N - 1)] = sr; im[k & (N - 1)] = si;
+    }
+    fft(re, im, true);
+    S.adI = Float32Array.from(re); S.adQ = Float32Array.from(im);
+    SP.adc = specCx(S.adI, S.adQ);
   },
   corr() {
-    const I = S.ifI, Q = S.ifQ;
+    const I = S.adI, Q = S.adQ;
     let sI = 0, sQ = 0;
     for (let n = 0; n < N; n++) { sI += I[n]; sQ += Q[n]; }
     const mI = sI / N, mQ = sQ / N;
@@ -753,13 +834,18 @@ const COMPUTE = {
       S.Ic = Ic; S.Qc = Qc;
     } else { S.Ic = I; S.Qc = Q; }
     S.zF = dftOf(S.Ic, S.Qc);
-    SP.cxRaw = specCx(I, Q);
+    S.iF = null; SP.cxI = null;
+    SP.cxRaw = SP.adc;
     SP.cxCorr = P.corr ? specCx(S.Ic, S.Qc) : SP.cxRaw;
   },
   dft() {
-    const { re, im } = S.zF, ks = Math.round(P.shift / BIN), or = new Float64Array(N), oi = new Float64Array(N);
+    // A single-mixer receiver only has I: a real signal, so the mask is mirrored and no shift is possible.
+    const real = P.rx === 'real';
+    if (real && !S.iF) { S.iF = dftOf(S.Ic); SP.cxI = specCx(S.Ic, new Float32Array(N)); }
+    const { re, im } = real ? S.iF : S.zF, ks = real ? 0 : Math.round(P.shift / BIN), mask = real ? maskMirror : maskG;
+    const or = new Float64Array(N), oi = new Float64Array(N);
     for (let k = 0; k < N; k++) {
-      const g = maskG(freqOf(k));
+      const g = mask(freqOf(k));
       if (g > 0) { const j = (k + ks) & (N - 1); or[j] = re[k] * g; oi[j] = im[k] * g; }
     }
     fft(or, oi, true);
@@ -767,17 +853,43 @@ const COMPUTE = {
     SP.dft = specCx(S.zr, S.zi);
   },
   out() {
+    const zr = S.zr, zi = S.zi, y = new Float32Array(N);
+    DET.text = '';
     if (P.demod === 'abs') {
-      const y = new Float32Array(N); let m = 0;
-      for (let n = 0; n < N; n++) { y[n] = Math.hypot(S.zr[n], S.zi[n]); m += y[n]; }
-      m /= N; for (let n = 0; n < N; n++) y[n] -= m;
-      S.out = y;
-    } else S.out = S.zr;
+      for (let n = 0; n < N; n++) y[n] = Math.hypot(zr[n], zi[n]);
+    } else if (P.demod === 'fm') {
+      // phase step between samples = instantaneous frequency
+      for (let n = 0; n < N; n++) {
+        const p = (n + N - 1) % N, a = zr[n] * zr[p] + zi[n] * zi[p], b = zi[n] * zr[p] - zr[n] * zi[p];
+        y[n] = Math.atan2(b, a) * FS / TAU;
+      }
+      let m = 0; for (let n = 0; n < N; n++) m += y[n];
+      DET.text = `FM discriminator: mean frequency ${sHz(m / N)} (a tuning error shows up as DC, removed before the speaker)`;
+    } else if (P.demod === 'sync') {
+      // Second-order PLL, ~25 Hz loop bandwidth, seeded with the average phase step. Two passes round the loop.
+      const wn = TAU * 25 / FS, kp = 2 * 0.707 * wn, ki = wn * wn;
+      let fr = 0, ph = 0, a = 0, b = 0;
+      for (let n = 0; n < N; n++) { const p = (n + N - 1) % N; a += zr[n] * zr[p] + zi[n] * zi[p]; b += zi[n] * zr[p] - zr[n] * zi[p]; }
+      fr = Math.atan2(b, a);
+      for (let pass = 0; pass < 2; pass++) {
+        for (let n = 0; n < N; n++) {
+          const c = Math.cos(ph), s = Math.sin(ph), re = zr[n] * c + zi[n] * s, im = zi[n] * c - zr[n] * s;
+          if (pass) y[n] = re;
+          const e = Math.atan2(im, re);
+          fr += ki * e; ph += fr + kp * e;
+          if (ph > Math.PI) ph -= TAU; else if (ph < -Math.PI) ph += TAU;
+        }
+      }
+      DET.text = `PLL locked to the carrier at ${sHz(fr * FS / TAU)} in z (after the shift)`;
+    } else y.set(zr);
+    if (P.demod !== 're') { let m = 0; for (let n = 0; n < N; n++) m += y[n]; m /= N; for (let n = 0; n < N; n++) y[n] -= m; }
+    if (P.rx === 'real') DET.text = (DET.text ? DET.text + ' · ' : '') + 'Single-mixer receiver: mask mirrored, shift ignored';
+    S.out = y;
     SP.out = specReal(S.out);
   }
 };
 
-const DEPS = { rf: [], pre: ['rf'], lo: [], mix: ['pre', 'lo'], if: ['mix'], corr: ['if'], dft: ['corr'], out: ['dft'] };
+const DEPS = { rf: [], pre: ['rf'], lo: [], mix: ['pre', 'lo'], if: ['mix'], adc: ['if'], corr: ['adc'], dft: ['corr'], out: ['dft'] };
 const dirty = new Set(ORDER);
 let pending = false;
 function markDirty(st) { dirty.add(st); }
@@ -795,10 +907,9 @@ function run() {
 // ---------- controls ----------
 function setParam(key, val, fromInput) {
   P[key] = val;
-  if (!fromInput) {
-    const el = document.getElementById(key);
-    if (el) { if (el.type === 'checkbox') el.checked = !!val; else el.value = val; }
-  }
+  const el = document.getElementById(key);
+  if (el && !fromInput && el.type !== 'checkbox') el.value = val;
+  for (const cb of document.querySelectorAll(`input[type=checkbox][data-key="${key}"]`)) cb.checked = !!val;
   const o = document.getElementById('o-' + key);
   if (o && FMT_OF[key]) o.textContent = FMT[FMT_OF[key]](val);
   markDirty(KEY_STAGE[key]); schedule();
@@ -807,8 +918,8 @@ function buildControls() {
   for (const box of document.querySelectorAll('[data-controls]')) {
     for (const c of CONTROLS[box.dataset.controls] || []) {
       if (c.type === 'chk') {
-        const l = document.createElement('label'); l.className = 'chk'; l.htmlFor = c.k;
-        l.innerHTML = `<input type="checkbox" id="${c.k}"> ${c.label}`;
+        const l = document.createElement('label'); l.className = 'chk'; l.htmlFor = c.id || c.k;
+        l.innerHTML = `<input type="checkbox" id="${c.id || c.k}" data-key="${c.k}"> ${c.label}`;
         const inp = l.querySelector('input'); inp.checked = !!P[c.k];
         inp.addEventListener('change', () => setParam(c.k, inp.checked, true));
         box.append(l);
@@ -816,7 +927,7 @@ function buildControls() {
         const l = document.createElement('label'); l.className = 'ctl'; l.htmlFor = c.k;
         l.innerHTML = `<span class="lab">${c.label}</span><span></span><select id="${c.k}">${c.opts.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>`;
         const inp = l.querySelector('select'); inp.value = P[c.k];
-        inp.addEventListener('change', () => setParam(c.k, inp.value, true));
+        inp.addEventListener('change', () => setParam(c.k, c.num ? +inp.value : inp.value, true));
         box.append(l);
       } else {
         FMT_OF[c.k] = c.fmt;
@@ -850,6 +961,7 @@ const PLAY = {
   ifI: { name: 'IF filter I', stage: 'if', get: () => [S.ifI] },
   ifQ: { name: 'IF filter Q', stage: 'if', get: () => [S.ifQ] },
   ifIQ: { name: 'IF filter, I left / Q right', stage: 'if', get: () => [S.ifI, S.ifQ] },
+  adcIQ: { name: 'Sampled I/Q, I left / Q right', stage: 'adc', get: () => [S.adI, S.adQ] },
   corrIQ: { name: 'I + jQ after correction, I left / Q right', stage: 'corr', get: () => [S.Ic, S.Qc] },
   dftIQ: { name: 'Masked and shifted z, Re left / Im right', stage: 'dft', get: () => [S.zr, S.zi] },
   out: { name: 'Receiver output', stage: 'out', get: () => [S.out] }
@@ -971,17 +1083,22 @@ const PLOTS = {
     plays: [['ifI', 'I', 'trI'], ['ifQ', 'Q', 'trQ'], ['ifIQ', 'I/Q', 'screen-ink']] },
   ifSpec: { type: 'spec', mode: 'real', title: 'Spectrum · drag to set cut-off', span: 4000, layers: () => [{ d: SP.mixI, ghost: true }, { d: SP.ifQ, col: 'trQ', line: true }, { d: SP.ifI, col: 'trI' }],
     overlays: () => [{ fn: Hif, col: 'trF' }], drag: f => setParam('ifCut', Math.round(Math.min(8000, Math.max(50, f)) / 10) * 10) },
-  xyZ: { type: 'xy', title: 'X–Y: z in the complex plane', span: 0.05, i: () => S.ifI, q: () => S.ifQ, plays: [['ifIQ', 'I/Q', 'screen-ink']] },
+  adcScope: { type: 'scope', title: 'Waveform · dots are samples', span: 0.005,
+    traces: () => [{ d: S.adI, col: 'trI', name: 'I', step: P.adcDiv }, { d: S.adQ, col: 'trQ', name: 'Q', step: P.adcDiv }], plays: [['adcIQ', 'I/Q', 'screen-ink']] },
+  adcSpec: { type: 'spec', mode: 'complex', title: 'Sampled I + jQ (grey: before)', span: 16000,
+    layers: () => [{ d: SP.ifCx, ghost: true }, { d: SP.adc, col: 'trZ' }], overlays: () => [{ fn: f => Math.abs(f) < FS / 2 / P.adcDiv ? 1 : 0, col: 'trF' }] },
+  xyZ: { type: 'xy', title: 'X–Y: z in the complex plane', span: 0.05, i: () => S.adI, q: () => S.adQ, plays: [['adcIQ', 'I/Q', 'screen-ink']] },
   cxRawSpec: { type: 'spec', mode: 'complex', title: 'Spectrum of I + jQ', span: 4000, layers: () => [{ d: SP.cxRaw, col: 'trZ' }] },
-  xyRaw: { type: 'xy', title: 'X–Y with the fault', span: 0.05, i: () => S.ifI, q: () => S.ifQ, plays: [['ifIQ', 'I/Q', 'screen-ink']] },
+  xyRaw: { type: 'xy', title: 'X–Y with the fault', span: 0.05, i: () => S.adI, q: () => S.adQ, plays: [['adcIQ', 'I/Q', 'screen-ink']] },
   cxBefore: { type: 'spec', mode: 'complex', title: 'Spectrum with the fault', span: 4000, layers: () => [{ d: SP.cxRaw, col: 'trZ' }] },
   xyCorr: { type: 'xy', title: 'X–Y after correction', span: 0.05, i: () => S.Ic, q: () => S.Qc, plays: [['corrIQ', 'I/Q', 'screen-ink']] },
   cxAfter: { type: 'spec', mode: 'complex', title: 'After correction (grey: before)', span: 4000,
     layers: () => P.corr ? [{ d: SP.cxRaw, ghost: true }, { d: SP.cxCorr, col: 'trZ' }] : [{ d: SP.cxRaw, col: 'trZ' }] },
-  dftIn: { type: 'spec', mode: 'complex', title: 'DFT of z with mask · drag', span: 4000, layers: () => [{ d: SP.cxCorr, col: 'trZ' }],
-    overlays: () => [{ fn: maskG, col: 'trF' }], drag: f => setParam('selC', Math.round(Math.min(8000, Math.max(-8000, f)) / 10) * 10) },
+  dftIn: { type: 'spec', mode: 'complex', title: 'DFT of z with mask · drag', span: 4000,
+    layers: () => [{ d: P.rx === 'real' ? SP.cxI : SP.cxCorr, col: 'trZ' }],
+    overlays: () => [{ fn: P.rx === 'real' ? maskMirror : maskG, col: 'trF' }], drag: f => setParam('selC', Math.round(Math.min(8000, Math.max(-8000, f)) / 10) * 10) },
   dftOut: { type: 'spec', mode: 'complex', title: 'After mask and shift', span: 4000, layers: () => [{ d: SP.cxCorr, ghost: true }, { d: SP.dft, col: 'trZ' }],
-    overlays: () => [{ fn: f => maskG(f - P.shift), col: 'trF' }] },
+    overlays: () => [{ fn: P.rx === 'real' ? maskMirror : f => maskG(f - P.shift), col: 'trF' }] },
   dftScope: { type: 'scope', title: 'Waveform of z', span: 0.02, traces: () => [{ d: S.zr, col: 'trI', name: 'Re' }, { d: S.zi, col: 'trQ', name: 'Im' }],
     plays: [['dftIQ', 'Re/Im', 'screen-ink']] },
   outScope: { type: 'scope', title: 'Waveform', span: 0.02, traces: () => [{ d: S.out, col: 'trZ', name: 'audio' }], plays: [['out', 'Play output', 'trZ']] },
@@ -1072,6 +1189,14 @@ function drawScope(pl) {
       }
     }
     c.stroke();
+    if (t.step > 1 && W * t.step / ns >= 5) {
+      c.fillStyle = C[t.col];
+      for (let i = 0; i < ns; i++) {
+        const n = ((start + i) % N + N) % N;
+        if (n % t.step) continue;
+        c.beginPath(); c.arc(i / (ns - 1) * W, yOf(t.d[n]), 2.2, 0, TAU); c.fill();
+      }
+    }
   }
   c.font = FONT; c.fillStyle = C.gridtxt;
   c.fillText('±' + fmtAmp(ymax), 6, 13);
@@ -1169,6 +1294,7 @@ function drawXY(pl) {
 
 // ---------- stats ----------
 function updateStats() {
+  document.getElementById('detInfo').textContent = DET.text;
   const $ = id => document.getElementById(id), f4 = v => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(4);
   const irr = (g, phDeg) => {
     const p = phDeg * Math.PI / 180, num = 1 + 2 * g * Math.cos(p) + g * g, den = 1 - 2 * g * Math.cos(p) + g * g;
