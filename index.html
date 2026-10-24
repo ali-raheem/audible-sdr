@@ -238,7 +238,7 @@ footer p { max-width: 90ch; }
     <div class="eyebrow">Quadrature direct-conversion receiver · simulated at 32 kHz · 4.096 s loop</div>
     <h1>Audible SDR</h1>
     <p class="byline">By Ali Raheem, <b>G3ALI</b> · <a href="https://g3ali.com/">g3ali.com</a> · <a href="https://github.com/ali-raheem/audible-sdr">Source on GitHub</a></p>
-    <p class="lede">This webpage shows the inner workings of what a basic typical software-defined radio, but with the frequencies shifted to be in the audible range. Instead of tuning to around 7MHz the "RF" is a 32 kHz sampled signal with 6 transmissions between 3 and 15kHz. Each stage is laid out as the waveoform of the signals, audio, spectrum/waterfall or other display as appropriate.</p>
+    <p class="lede">This webpage shows the inner workings of what a basic, typical software-defined radio does, but with the frequencies shifted to be in the audible range. Instead of tuning to around 7 MHz the "RF" is a 32 kHz sampled signal with 6 transmissions between 3 and 15 kHz. Each stage is laid out as the waveform of the signals, audio, spectrum/waterfall or other display as appropriate.</p>
 
     <div class="flow-wrap">
       <svg class="flow" viewBox="0 0 1010 200" role="img" aria-label="Signal flow: antenna, preselector, two mixers fed by a quadrature LO, IF low-pass filters, ADCs, then I plus jQ, IQ correction, DFT, mask and shift, inverse DFT, real part, speaker">
@@ -298,7 +298,7 @@ footer p { max-width: 90ch; }
       <h3 style="margin-bottom:10px">On the air</h3>
       <div class="stations" id="stations"></div>
     </div>
-    <p class="note">The page opens as an idealized receiver, withou faults or noise but once you're comfortable you can enable issues to work around. Active noise/fault panels are marked <b class="adv-badge-inline">active</b>.</p>
+    <p class="note">The page opens as an idealized receiver, without faults or noise but once you're comfortable you can enable issues to work around. Active noise/fault panels are marked <b class="adv-badge-inline">active</b>.</p>
     <details class="adv" id="adv-exp">
         <summary><span class="adv-t">Experiments</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Here are some ready made experiments to try, although I'd suggest working through tuning manually first before having a look.</span></summary>
         <div class="adv-body">
@@ -315,7 +315,7 @@ footer p { max-width: 90ch; }
       <p>The entire signal arrives at the antenna at once. The chaos you hear is just what the antenna hears as a mixture of different frequencies in different patterns and encodings.</p>
       <div class="controls" data-controls="rf"></div>
       <details class="adv" id="adv-noise">
-        <summary><span class="adv-t">Noise</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">Real life, even very good setups will have noise either from other signals, atmospheric noise depending on the RF band. Try adding some noise even at a low level (0.015 say).</span></summary>
+        <summary><span class="adv-t">Noise</span><span class="adv-badge" hidden>active</span><span class="adv-a" aria-hidden="true"></span><span class="adv-l">In real life, even very good setups have noise either from other signals, atmospheric noise depending on the RF band. Try adding some noise even at a low level (0.015 say).</span></summary>
         <div class="adv-body">
           <p class="note">Every real receiver adds noise, and noise is spread across the whole band while a signal sits in one place. Each filter that narrows the band removes noise but keeps the signal, so the signal-to-noise ratio improves by 10·log₁₀ of the bandwidth ratio. Going from a 2 kHz SSB-sized mask to 150 Hz for CW gains about 11 dB, which is why CW gets through when voice does not. FM behaves differently: it is clean down to a threshold and then breaks up suddenly. Try the CQ and NBFM presets as you raise the noise.</p>
           <div class="controls" data-controls="noise"></div>
@@ -330,7 +330,7 @@ footer p { max-width: 90ch; }
     <div class="rail"><div class="num">2</div></div>
     <div class="body">
       <div class="shead"><h2>RF preselector</h2><span class="dom analog">analog</span></div>
-      <p>The RF preselector is a bandpass filter before the mixer and rest of the SDR. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it. Real designs for filters quickly become combersome and might be impractical in terms of cost of parts, quality of parts or ease of tuning.</p>
+      <p>The RF preselector is a bandpass filter before the mixer and rest of the SDR. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it. Real designs for filters quickly become cumbersome and might be impractical in terms of cost of parts, quality of parts or ease of tuning.</p>
       <div class="controls" data-controls="pre"></div>
       <div class="plots"><div data-plot="preScope"></div><div data-plot="preSpec"></div></div>
     </div>

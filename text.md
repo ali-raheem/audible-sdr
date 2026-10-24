@@ -23,13 +23,13 @@ Audible SDR
 By Ali Raheem, **G3ALI** · [g3ali.com](https://g3ali.com/) · [Source on GitHub](https://github.com/ali-raheem/audible-sdr)
 
 ## intro.lede
-This webpage shows the inner workings of what a basic typical software-defined radio, but with the frequencies shifted to be in the audible range. Instead of tuning to around 7MHz the "RF" is a 32 kHz sampled signal with 6 transmissions between 3 and 15kHz. Each stage is laid out as the waveoform of the signals, audio, spectrum/waterfall or other display as appropriate.
+This webpage shows the inner workings of what a basic, typical software-defined radio does, but with the frequencies shifted to be in the audible range. Instead of tuning to around 7 MHz the "RF" is a 32 kHz sampled signal with 6 transmissions between 3 and 15 kHz. Each stage is laid out as the waveform of the signals, audio, spectrum/waterfall or other display as appropriate.
 
 ## intro.heading1
 On the air
 
 ## intro.p2
-The page opens as an idealized receiver, withou faults or noise but once you're comfortable you can enable issues to work around.
+The page opens as an idealized receiver, without faults or noise but once you're comfortable you can enable issues to work around.
 Active noise/fault panels are marked <b class="adv-badge-inline">active</b>.
 
 
@@ -60,7 +60,7 @@ The entire signal arrives at the antenna at once. The chaos you hear is just wha
 Noise
 
 ## noise.summary
-Real life, even very good setups will have noise either from other signals, atmospheric noise depending on the RF band. Try adding some noise even at a low level (0.015 say).
+In real life, even very good setups have noise either from other signals, atmospheric noise depending on the RF band. Try adding some noise even at a low level (0.015 say).
 
 ## noise.p1
 Every real receiver adds noise, and noise is spread across the whole band while a signal sits in one place. Each filter that narrows the band removes noise but keeps the signal, so the signal-to-noise ratio improves by 10·log₁₀ of the bandwidth ratio. Going from a 2 kHz SSB-sized mask to 150 Hz for CW gains about 11 dB, which is why CW gets through when voice does not. FM behaves differently: it is clean down to a threshold and then breaks up suddenly. Try the CQ and NBFM presets as you raise the noise.
@@ -72,7 +72,7 @@ Every real receiver adds noise, and noise is spread across the whole band while 
 RF preselector
 
 ## preselector.p1
-The RF preselector is a bandpass filter before the mixer and rest of the SDR. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it. Real designs for filters quickly become combersome and might be impractical in terms of cost of parts, quality of parts or ease of tuning.
+The RF preselector is a bandpass filter before the mixer and rest of the SDR. An ideal multiplier would not need it, but real switching mixers also respond at harmonics of the LO (3×, 5×…; see the panel in section 3) and can be overloaded by strong signals far from the wanted one. The preselector stops the mixer from ever seeing them. The grey trace is the antenna signal and the green curve is the filter. Drag on the spectrum to move it. Real designs for filters quickly become cumbersome and might be impractical in terms of cost of parts, quality of parts or ease of tuning.
 
 
 # 3 · Local oscillator
