@@ -156,6 +156,8 @@ button, select, input { font: inherit; color: inherit; }
 .pbtn[aria-pressed="true"] { background: var(--c); color: var(--screen); }
 .screen canvas { display: block; width: 100%; height: 190px; touch-action: pan-y; }
 .screen canvas.xy { height: 230px; }
+.screen canvas.wf { height: 240px; }
+.plots.wide { grid-template-columns: minmax(0, 1fr); }
 .screen canvas.drag { cursor: ew-resize; }
 
 .stats { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -209,6 +211,7 @@ footer p { max-width: 90ch; }
     </label>
     <label class="tctl" for="vol">Volume <input type="range" id="vol" min="0" max="1" step="0.01" value="0.5"></label>
     <label class="tctl chk" for="follow"><input type="checkbox" id="follow" checked> Scopes follow playback</label>
+    <label class="tctl chk" for="wfOn" title="Waterfalls add some processing after each change"><input type="checkbox" id="wfOn" checked> Waterfalls</label>
     <button class="btn" id="stop" type="button">Stop</button>
   </div>
 </div>
@@ -218,7 +221,7 @@ footer p { max-width: 90ch; }
     <div class="eyebrow">Quadrature direct-conversion receiver · simulated at 32 kHz · 4.096 s loop</div>
     <h1>Audible SDR</h1>
     <p class="byline">By Ali Raheem, <b>G3ALI</b> · <a href="https://g3ali.com/">g3ali.com</a> · <a href="https://github.com/ali-raheem/audible-sdr">Source on GitHub</a></p>
-    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with six transmissions between 3 and 15 kHz, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right.</p>
+    <p class="lede">A software-defined radio, moved down into the audio band so you can hear every stage. The “RF” is a 32 kHz-sampled signal with six transmissions between 3 and 15 kHz, including G3ALI calling CQ in Morse. Each stage of an I/Q receiver is applied in order, and you can look at and listen to the signal after each one. The I/Q buttons play I in the left ear and Q in the right. The waterfalls scroll with playback, newest at the top, so you can watch the Morse being keyed and the notes changing.</p>
 
     <div class="flow-wrap">
       <svg class="flow" viewBox="0 0 1010 200" role="img" aria-label="Signal flow: antenna, preselector, two mixers fed by a quadrature LO, IF low-pass filters, ADCs, then I plus jQ, IQ correction, DFT, mask and shift, inverse DFT, real part, speaker">
@@ -302,6 +305,7 @@ footer p { max-width: 90ch; }
         </div>
       </details>
       <div class="plots"><div data-plot="rfScope"></div><div data-plot="rfSpec"></div></div>
+      <div class="plots wide"><div data-plot="rfWf"></div></div>
     </div>
   </section>
 
@@ -437,6 +441,7 @@ footer p { max-width: 90ch; }
         </div>
       </details>
       <div class="plots three"><div data-plot="dftIn"></div><div data-plot="dftOut"></div><div data-plot="dftScope"></div></div>
+      <div class="plots wide"><div data-plot="dftWf"></div></div>
     </div>
   </section>
 
@@ -462,6 +467,7 @@ footer p { max-width: 90ch; }
       <div class="controls" data-controls="out"></div>
       <p class="note mono" id="detInfo"></p>
       <div class="plots"><div data-plot="outScope"></div><div data-plot="outSpec"></div></div>
+      <div class="plots wide"><div data-plot="outWf"></div></div>
     </div>
   </section>
 
@@ -964,6 +970,7 @@ function run() {
   const done = new Set();
   for (const st of ORDER) if (dirty.has(st) || DEPS[st].some(d => done.has(d))) { COMPUTE[st](); done.add(st); }
   dirty.clear();
+  markWF(done); scheduleWF();
   drawAll(); updateStats();
   if (cur && done.has(PLAY[cur.id].stage)) requestAudioRefresh();
 }
@@ -1110,6 +1117,8 @@ const C = {};
 function readColors() {
   const cs = getComputedStyle(document.documentElement);
   for (const n of ['screen', 'screen-ink', 'grid', 'grid-strong', 'gridtxt', 'trI', 'trQ', 'trZ', 'trF', 'ghost']) C[n] = cs.getPropertyValue('--' + n).trim();
+  buildLUT();
+  for (const id in WF) renderWF(WF[id]);
 }
 const peakCache = new WeakMap();
 function peakOf(d) {
@@ -1146,6 +1155,8 @@ const PLOTS = {
   rfScope: { type: 'scope', title: 'Waveform', span: 0.005, traces: () => [{ d: S.rf, col: 'trI', name: 'rf' }], plays: [['rf', 'Play', 'trI']] },
   rfSpec: { type: 'spec', mode: 'real', title: 'Spectrum · drag to tune', span: 16000, layers: () => [{ d: SP.rf, col: 'trI' }], markers: loMarker,
     drag: f => { const v = Math.round(Math.min(15900, Math.max(100, f)) / 50) * 50; setParam('loF', v); setParam('preC', v); } },
+  rfWf: { type: 'wf', src: 'rf', mode: 'real', title: 'Waterfall · newest at top · drag to tune', span: 16000, lines: loMarker,
+    drag: f => { const v = Math.round(Math.min(15900, Math.max(100, f)) / 50) * 50; setParam('loF', v); setParam('preC', v); } },
   preScope: { type: 'scope', title: 'Waveform', span: 0.005, traces: () => [{ d: S.pre, col: 'trI', name: 'preselected' }], plays: [['pre', 'Play', 'trI']] },
   preSpec: { type: 'spec', mode: 'real', title: 'Spectrum · drag to move filter', span: 16000, layers: () => [{ d: SP.rf, ghost: true }, { d: SP.pre, col: 'trI' }],
     overlays: () => P.preOn ? [{ fn: Hpre, col: 'trF' }] : [], markers: loMarker,
@@ -1177,22 +1188,29 @@ const PLOTS = {
     overlays: () => [{ fn: P.rx === 'real' ? maskMirror : maskG, col: 'trF' }], drag: f => setParam('selC', Math.round(Math.min(8000, Math.max(-8000, f)) / 10) * 10) },
   dftOut: { type: 'spec', mode: 'complex', title: 'After mask and shift', span: 4000, layers: () => [{ d: SP.cxCorr, ghost: true }, { d: SP.dft, col: 'trZ' }],
     overlays: () => [{ fn: P.rx === 'real' ? maskMirror : f => maskG(f - P.shift), col: 'trF' }] },
+  dftWf: { type: 'wf', src: 'dft', mode: 'complex', title: 'Waterfall of z · green lines are the mask · drag', span: 4000,
+    lines: () => { const m = P.rx === 'real' ? [P.selC, -P.selC] : [P.selC]; return m.flatMap(c => [{ f: c - P.selW / 2, col: 'trF' }, { f: c + P.selW / 2, col: 'trF' }]); },
+    drag: f => setParam('selC', Math.round(Math.min(8000, Math.max(-8000, f)) / 10) * 10) },
   dftScope: { type: 'scope', title: 'Waveform of z', span: 0.02, traces: () => [{ d: S.zr, col: 'trI', name: 'Re' }, { d: S.zi, col: 'trQ', name: 'Im' }],
     plays: [['dftIQ', 'Re/Im', 'screen-ink']] },
   outScope: { type: 'scope', title: 'Waveform', span: 0.02, traces: () => [{ d: S.out, col: 'trZ', name: 'audio' }], plays: [['out', 'Play output', 'trZ']] },
+  outWf: { type: 'wf', src: 'out', mode: 'real', title: 'Waterfall of the audio', span: 4000 },
   outSpec: { type: 'spec', mode: 'real', title: 'Spectrum', span: 4000, layers: () => [{ d: SP.out, col: 'trZ' }] }
 };
 
 const visible = new Set();
 function buildPlots() {
   const ro = new ResizeObserver(es => { for (const e of es) drawPlot(e.target._pl); });
-  const io = new IntersectionObserver(es => { for (const e of es) { if (e.isIntersecting) visible.add(e.target._pl); else visible.delete(e.target._pl); } });
+  const io = new IntersectionObserver(es => {
+    for (const e of es) { if (e.isIntersecting) visible.add(e.target._pl); else visible.delete(e.target._pl); }
+    if (es.some(e => e.isIntersecting && e.target._pl.type === 'wf')) scheduleWF();
+  });
   for (const el of document.querySelectorAll('[data-plot]')) {
     const id = el.dataset.plot, pl = PLOTS[id];
     const fig = document.createElement('figure'); fig.className = 'screen';
     const hd = document.createElement('div'); hd.className = 'shd';
     const st = document.createElement('span'); st.className = 'st'; st.textContent = pl.title; hd.append(st);
-    const kind = pl.type === 'spec' ? pl.mode : pl.type;
+    const kind = pl.mode || pl.type;
     const sel = document.createElement('select'); sel.id = 'span-' + id; sel.setAttribute('aria-label', pl.title + ' span');
     for (const v of SPANS[kind]) { const o = document.createElement('option'); o.value = String(v); o.textContent = spanLabel(kind, v); sel.append(o); }
     sel.value = String(pl.span);
@@ -1205,7 +1223,7 @@ function buildPlots() {
       b.addEventListener('click', () => togglePlay(pid));
       hd.append(b);
     }
-    const cv = document.createElement('canvas'); cv.className = pl.type === 'xy' ? 'xy' : '';
+    const cv = document.createElement('canvas'); cv.className = pl.type === 'xy' || pl.type === 'wf' ? pl.type : '';
     fig.append(hd, cv); el.replaceWith(fig);
     pl.cv = cv; cv._pl = pl;
     if (pl.drag) {
@@ -1224,7 +1242,7 @@ const specRange = pl => pl.mode === 'real' ? [0, pl.span] : [-pl.span, pl.span];
 
 function drawPlot(pl) {
   if (!pl || !pl.cv) return;
-  if (pl.type === 'scope') drawScope(pl); else if (pl.type === 'spec') drawSpec(pl); else drawXY(pl);
+  if (pl.type === 'scope') drawScope(pl); else if (pl.type === 'spec') drawSpec(pl); else if (pl.type === 'wf') drawWF(pl); else drawXY(pl);
 }
 function drawAll() { for (const id in PLOTS) drawPlot(PLOTS[id]); }
 function drawLive() { for (const id in PLOTS) { const pl = PLOTS[id]; if (pl.type !== 'spec') drawPlot(pl); } }
@@ -1286,6 +1304,106 @@ function drawScope(pl) {
 }
 
 const DB_TOP = 0, DB_BOT = -110;
+
+// ---------- waterfalls ----------
+// One STFT image per waterfall covers the whole loop; playback only scrolls it, so drawing is cheap.
+// Recomputing is the costly part, so it waits until the controls stop moving and skips off-screen ones.
+const WF_HOP = 512, WF_FRAMES = N / WF_HOP, WF_LO = -100, WF_HI = -10;
+const WF_SRC = {
+  rf: { nfft: 512, mode: 'real', stages: ['rf'], get: () => [S.rf, null] },
+  dft: { nfft: 1024, mode: 'complex', stages: ['corr', 'dft'], get: () => P.rx === 'real' ? [S.Ic, null] : [S.Ic, S.Qc] },
+  out: { nfft: 1024, mode: 'real', stages: ['out'], get: () => [S.out, null] }
+};
+const WF = {};
+let wfTimer = null, LUT = null;
+const wfOn = () => document.getElementById('wfOn').checked;
+function stft(re, im, nfft, mode) {
+  const w = new Float64Array(nfft); let sw = 0;
+  for (let i = 0; i < nfft; i++) { w[i] = 0.5 - 0.5 * Math.cos(TAU * i / nfft); sw += w[i]; }
+  const bins = mode === 'real' ? nfft / 2 + 1 : nfft, db = new Float32Array(WF_FRAMES * bins);
+  const br = new Float64Array(nfft), bi = new Float64Array(nfft), ref = (mode === 'real' ? 2 : 1) ** 2 / (sw * sw);
+  for (let f = 0; f < WF_FRAMES; f++) {
+    const o = f * WF_HOP - nfft / 2;
+    for (let i = 0; i < nfft; i++) { const n = (o + i) & (N - 1); br[i] = re[n] * w[i]; bi[i] = im ? im[n] * w[i] : 0; }
+    fft(br, bi, false);
+    for (let j = 0; j < bins; j++) {
+      const k = mode === 'real' ? j : (j + nfft / 2) % nfft;
+      db[f * bins + j] = 10 * Math.log10((br[k] * br[k] + bi[k] * bi[k]) * ref + 1e-20);
+    }
+  }
+  return { db, bins, nfft, mode };
+}
+function hexRGB(h) { const v = parseInt(h.replace('#', ''), 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
+function buildLUT() {
+  const stops = [[0, hexRGB(C.screen)], [0.3, [10, 60, 90]], [0.55, hexRGB(C.trQ)], [0.8, hexRGB(C.trI)], [1, [255, 255, 255]]];
+  LUT = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255; let s = 0; while (s < stops.length - 2 && t > stops[s + 1][0]) s++;
+    const [t0, a] = stops[s], [t1, b] = stops[s + 1], u = (t - t0) / (t1 - t0);
+    for (let c = 0; c < 3; c++) LUT[i * 3 + c] = a[c] + (b[c] - a[c]) * u;
+  }
+}
+// Time runs upwards in the image, so frame f sits on row WF_FRAMES-1-f.
+function renderWF(o) {
+  if (!o.cv) o.cv = document.createElement('canvas');
+  o.cv.width = o.bins; o.cv.height = WF_FRAMES;
+  const ctx = o.cv.getContext('2d'), img = ctx.createImageData(o.bins, WF_FRAMES), px = img.data;
+  for (let f = 0; f < WF_FRAMES; f++) {
+    const row = (WF_FRAMES - 1 - f) * o.bins;
+    for (let j = 0; j < o.bins; j++) {
+      const t = Math.max(0, Math.min(255, Math.round((o.db[f * o.bins + j] - WF_LO) / (WF_HI - WF_LO) * 255)));
+      const p = (row + j) * 4; px[p] = LUT[t * 3]; px[p + 1] = LUT[t * 3 + 1]; px[p + 2] = LUT[t * 3 + 2]; px[p + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+function markWF(done) { for (const id in WF_SRC) if (!WF[id] || WF_SRC[id].stages.some(st => done.has(st))) WF_SRC[id].stale = true; }
+function scheduleWF() { clearTimeout(wfTimer); wfTimer = setTimeout(updateWF, 200); }
+function updateWF() {
+  if (!wfOn() || !S.out) return;
+  for (const id in PLOTS) {
+    const pl = PLOTS[id], src = WF_SRC[pl.src];
+    if (pl.type !== 'wf' || !src.stale || !visible.has(pl)) continue;
+    const [re, im] = src.get();
+    WF[pl.src] = stft(re, im, src.nfft, src.mode); renderWF(WF[pl.src]); src.stale = false;
+    drawPlot(pl);
+  }
+}
+function setWFVisible() {
+  const on = wfOn();
+  for (const id in PLOTS) if (PLOTS[id].type === 'wf' && PLOTS[id].cv) PLOTS[id].cv.closest('figure').hidden = !on;
+  if (on) scheduleWF();
+}
+function drawWF(pl) {
+  const { c, W, H } = setupCanvas(pl.cv), o = WF[pl.src];
+  if (!o || !o.cv) return blank(c, W, H, wfOn() ? 'computing…' : '');
+  blank(c, W, H);
+  const [f0, f1] = specRange(pl), L = 30, B = 16, PW = W - L, PH = H - B, df = FS / o.nfft;
+  const xOf = f => L + (f - f0) / (f1 - f0) * PW;
+  const sx = (pl.mode === 'real' ? f0 : f0 + FS / 2) / df, sw = (f1 - f0) / df;
+  // newest frame at the top, older ones below, wrapping round the loop
+  const F = WF_FRAMES, r = F - 1 - (Math.floor(playPos() / DUR * F) % F), h1 = (F - r) / F * PH;
+  c.imageSmoothingEnabled = true;
+  c.drawImage(o.cv, sx, r, sw, F - r, L, 0, PW, h1);
+  if (r > 0) c.drawImage(o.cv, sx, 0, sw, r, L, h1, PW, PH - h1);
+  c.font = FONT; c.fillStyle = C.gridtxt; c.strokeStyle = C['grid-strong']; c.lineWidth = 1; c.beginPath();
+  for (let t = 0; t < DUR; t++) { const y = Math.round(t / DUR * PH) + 0.5; c.moveTo(L - 4, y); c.lineTo(L, y); c.fillText(t ? '−' + t + 's' : 'now', 2, Math.max(10, y + 3)); }
+  const span = f1 - f0, stp = [250, 500, 1000, 2000, 4000].find(s => span / s <= 8) || 4000;
+  c.textAlign = 'center';
+  for (let f = Math.ceil(f0 / stp) * stp; f <= f1; f += stp) {
+    const x = Math.round(xOf(f)) + 0.5; c.moveTo(x, PH); c.lineTo(x, PH + 4);
+    c.fillText((f / 1000) + (f === 0 ? '' : 'k'), Math.min(W - 10, Math.max(L + 8, x)), H - 4);
+  }
+  c.stroke(); c.textAlign = 'left';
+  c.save(); c.beginPath(); c.rect(L, 0, PW, PH); c.clip();
+  for (const m of (pl.lines ? pl.lines() : [])) {
+    if (m.f < f0 || m.f > f1) continue;
+    const x = Math.round(xOf(m.f)) + 0.5;
+    c.strokeStyle = C[m.col]; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, m.label ? 12 : 0); c.lineTo(x, PH); c.stroke(); c.setLineDash([]);
+    if (m.label) { c.fillStyle = C[m.col]; c.textAlign = x > W - 30 ? 'right' : 'left'; c.fillText(m.label, x + (x > W - 30 ? -3 : 3), 10); c.textAlign = 'left'; }
+  }
+  c.restore();
+}
 function drawSpec(pl) {
   const { c, W, H } = setupCanvas(pl.cv);
   const layers = pl.layers().filter(l => l.d);
@@ -1420,7 +1538,10 @@ function boot() {
   document.getElementById('stop').addEventListener('click', stopPlay);
   document.getElementById('imbDemo').addEventListener('click', () => applyPreset('imb'));
   document.getElementById('follow').addEventListener('change', drawLive);
-  buildControls(); buildPlots(); updateButtons();
+  const wfBox = document.getElementById('wfOn');
+  try { if (localStorage.getItem('audible-sdr-wf') === '0') wfBox.checked = false; } catch (e) { /* storage unavailable */ }
+  wfBox.addEventListener('change', () => { try { localStorage.setItem('audible-sdr-wf', wfBox.checked ? '1' : '0'); } catch (e) { /* ignore */ } setWFVisible(); });
+  buildControls(); buildPlots(); updateButtons(); setWFVisible();
   const retheme = () => { readColors(); drawAll(); };
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
   new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
